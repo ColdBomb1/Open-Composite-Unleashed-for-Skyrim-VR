@@ -280,7 +280,11 @@ add_library(OCCore STATIC
 	OpenOVR/Misc/smooth_input.cpp
 	OpenOVR/Misc/Config.cpp
 	OpenOVR/Misc/debug_helper.cpp
+	OpenOVR/Misc/ExternalUpscalerState.cpp
+	OpenOVR/Misc/ExternalUpscalerState.h
 	OpenOVR/Misc/Haptics.cpp
+	OpenOVR/Misc/MipBiasHook.cpp
+	OpenOVR/Misc/MipBiasHook.h
 	OpenOVR/Misc/OVRPerfHook.cpp
 	OpenOVR/Misc/OVRPerfHook.h
 	OpenOVR/Misc/xrutil.cpp

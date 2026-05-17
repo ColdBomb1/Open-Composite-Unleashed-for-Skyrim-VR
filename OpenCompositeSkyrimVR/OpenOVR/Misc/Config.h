@@ -171,6 +171,10 @@ public:
 
 	// MIP LOD bias correction
 	inline bool MipBiasEnabled() const { return mipBiasEnabled; }
+	inline const std::string& MipBias() const { return mipBias; }
+	inline float MipBiasOffset() const { return mipBiasOffset; }
+	inline float DlssMipBiasOffset() const { return dlssMipBiasOffset; }
+	inline float Fsr3MipBiasOffset() const { return fsr3MipBiasOffset; }
 
 	// NVIDIA VRS foveated rendering
 	inline bool VrsEnabled() const { return vrsEnabled; }
@@ -333,6 +337,10 @@ private:
 
 	// MIP LOD bias correction
 	bool mipBiasEnabled = true;
+	std::string mipBias = "auto";    // "auto" = log2(renderScale) + mipBiasOffset, numeric = fixed bias
+	float mipBiasOffset = 0.0f;      // Shared extra offset applied only when mipBias=auto
+	float dlssMipBiasOffset = 0.0f;  // DLSS-specific auto offset, added after mipBiasOffset
+	float fsr3MipBiasOffset = 1.0f;  // FSR3-specific auto offset, added after mipBiasOffset
 
 	// NVIDIA VRS foveated rendering
 	bool vrsEnabled = false;

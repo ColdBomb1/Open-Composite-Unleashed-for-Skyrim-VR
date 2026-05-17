@@ -27,6 +27,28 @@
 ; Default: 1.0
 ;supersampleRatio=1.0
 
+; Correct texture MIP selection when DLSS/FSR3 renders below display resolution.
+; Default: true
+;mipBiasEnabled=true
+
+; MIP LOD bias mode.
+; auto uses log2(renderScale) plus mipBiasOffset.
+; You can also set a fixed numeric value, e.g. mipBias=-0.766.
+; Default: auto
+;mipBias=auto
+
+; Extra offset used only when mipBias=auto.
+; Default: 0.0
+;mipBiasOffset=0.0
+
+; Additional DLSS-only offset used only when mipBias=auto.
+; Default: 0.0
+;dlssMipBiasOffset=0.0
+
+; Additional FSR3-only offset used only when mipBias=auto.
+; Default: 1.0
+;fsr3MipBiasOffset=1.0
+
 ; Render the default OpenComposite controller models.
 ; Set to false if you prefer in-game hand models or use a mod like VRIK.
 ; Default: true
