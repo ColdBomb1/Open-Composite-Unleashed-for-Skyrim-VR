@@ -7,9 +7,14 @@
 
 
 #include "../Misc/Config.h"
+#include "../Misc/MipBiasHook.h"
 #include "../Misc/xr_ext.h"
 
+#include <algorithm>
+#include <cerrno>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <d3dcompiler.h> // For compiling shaders! D3DCompile
 #include <string>
 #include <filesystem>
@@ -2728,6 +2733,116 @@ static float Fsr3EffectiveRenderScale()
 }
 #endif
 
+static std::string TrimLower(std::string value)
+{
+	value.erase(value.begin(), std::find_if(value.begin(), value.end(), [](unsigned char c) {
+		return !std::isspace(c);
+	}));
+	value.erase(std::find_if(value.rbegin(), value.rend(), [](unsigned char c) {
+		return !std::isspace(c);
+	}).base(), value.end());
+	std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+		return (char)std::tolower(c);
+	});
+	return value;
+}
+
+static bool TryParseFloat(const std::string& value, float& out)
+{
+	errno = 0;
+	char* end = nullptr;
+	float parsed = std::strtof(value.c_str(), &end);
+	while (end && std::isspace((unsigned char)*end))
+		end++;
+	if (end == value.c_str() || !end || *end != '\0' || errno == ERANGE || !std::isfinite(parsed))
+		return false;
+	out = parsed;
+	return true;
+}
+
+enum class MipBiasUpscaler {
+	None,
+	Fsr3,
+	Dlss,
+};
+
+static bool TemporalUpscalerRequestedForMipBias(float& renderScale, MipBiasUpscaler& upscaler)
+{
+	renderScale = Fsr3EffectiveRenderScale();
+	upscaler = MipBiasUpscaler::None;
+
+#ifdef OC_HAS_FSR3
+	if (Fsr3TemporalRequested()) {
+		renderScale = Fsr3EffectiveRenderScale();
+		upscaler = MipBiasUpscaler::Fsr3;
+		return true;
+	}
+#endif
+
+#ifdef OC_HAS_DLSS
+	if (oovr_global_configuration.DlssEnabled()
+	    && (oovr_global_configuration.FsrRenderScale() < 0.99f
+	        || oovr_global_configuration.DlssPreset() == 4)) {
+		renderScale = oovr_global_configuration.FsrRenderScale();
+		upscaler = MipBiasUpscaler::Dlss;
+		return true;
+	}
+#endif
+
+	return false;
+}
+
+static bool GetConfiguredMipBias(float& lodBias)
+{
+	if (!oovr_global_configuration.MipBiasEnabled())
+		return false;
+
+	std::string mipBiasMode = TrimLower(oovr_global_configuration.MipBias());
+	if (mipBiasMode == "off" || mipBiasMode == "false" || mipBiasMode == "disabled"
+	    || mipBiasMode == "none") {
+		return false;
+	}
+
+	if (!mipBiasMode.empty() && mipBiasMode != "auto" && mipBiasMode != "default") {
+		if (TryParseFloat(mipBiasMode, lodBias))
+			return true;
+
+		static bool warned = false;
+		if (!warned) {
+			OOVR_LOGF("MipBias: invalid mipBias value '%s'; falling back to auto", mipBiasMode.c_str());
+			warned = true;
+		}
+	}
+
+	float renderScale = 1.0f;
+	MipBiasUpscaler upscaler = MipBiasUpscaler::None;
+	if (!TemporalUpscalerRequestedForMipBias(renderScale, upscaler))
+		return false;
+
+	renderScale = std::clamp(renderScale, 0.1f, 1.0f);
+	float upscalerOffset = 0.0f;
+	if (upscaler == MipBiasUpscaler::Fsr3)
+		upscalerOffset = oovr_global_configuration.Fsr3MipBiasOffset();
+	else if (upscaler == MipBiasUpscaler::Dlss)
+		upscalerOffset = oovr_global_configuration.DlssMipBiasOffset();
+
+	lodBias = std::log2(renderScale)
+	    + oovr_global_configuration.MipBiasOffset()
+	    + upscalerOffset;
+	return true;
+}
+
+static void UpdateMipBiasForUpscaler(ID3D11DeviceContext* ctx)
+{
+	float lodBias = 0.0f;
+	bool enabled = GetConfiguredMipBias(lodBias);
+	if (enabled && InitMipBiasHook(ctx)) {
+		ConfigureMipBiasHook(true, lodBias);
+	} else if (IsMipBiasHookActive()) {
+		ConfigureMipBiasHook(false, 0.0f);
+	}
+}
+
 #ifdef OC_HAS_DLSS
 static DlssUpscaler* s_dlssUpscaler = nullptr;
 
@@ -3523,6 +3638,7 @@ DX11Compositor::DX11Compositor(ID3D11Texture2D* initial)
 {
 	initial->GetDevice(&device);
 	device->GetImmediateContext(&context);
+	UpdateMipBiasForUpscaler(context);
 
 	// Shaders for inverting copy
 	ID3DBlob* fs_vert_shader_blob = d3d_compile_shader(fs_shader_code, "vs_fs", "vs_5_0");
@@ -3689,6 +3805,9 @@ DX11Compositor::~DX11Compositor()
 	if (context) {
 		context->ClearState();
 		context->Flush();
+	}
+	if (iAmDxcomp) {
+		ShutdownMipBiasHook();
 	}
 	ReleaseFsr3PostAASRVs();
 

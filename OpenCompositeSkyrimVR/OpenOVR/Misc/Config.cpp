@@ -1,10 +1,12 @@
 #include "stdafx.h"
 
 #include "Config.h"
+#include "ExternalUpscalerState.h"
 #include "ini.h"
 
 #include <algorithm>
 #include <codecvt>
+#include <cmath>
 #include <locale>
 #include <string>
 
@@ -320,6 +322,10 @@ int Config::ini_handler(void* user, const char* pSection,
 		CFGOPT(bool, fsrRadiusEnabled);
 		CFGOPT(float, fsrRadius);
 		CFGOPT(bool, mipBiasEnabled);
+		CFGOPT(string, mipBias);
+		CFGOPT(float, mipBiasOffset);
+		CFGOPT(float, dlssMipBiasOffset);
+		CFGOPT(float, fsr3MipBiasOffset);
 		CFGOPT(bool, vrsEnabled);
 		CFGOPT(float, vrsInnerRadius);
 		CFGOPT(float, vrsMidRadius);
@@ -389,6 +395,52 @@ static float dlss_preset_render_scale(int preset)
 		OOVR_LOGF("DLSS: Unknown preset %d, defaulting render scale to Quality", preset);
 		return 0.67f;
 	}
+}
+
+static float external_upscaler_mip_bias(float renderScale)
+{
+	float clampedScale = std::max(0.1f, std::min(1.0f, renderScale));
+	return std::log2(clampedScale) - 1.0f;
+}
+
+static void publish_external_upscaler_config(const Config& cfg)
+{
+	const bool fsrTemporalActive = cfg.FsrEnabled()
+	    && (cfg.FsrRenderScale() < 0.999f || cfg.FsrNativeAA());
+	const bool dlssTemporalActive = cfg.DlssEnabled()
+	    && !cfg.FsrEnabled()
+	    && (cfg.FsrRenderScale() < 0.999f || cfg.DlssPreset() == 4);
+	const bool dlaaPostActive = cfg.DlaaEnabled();
+	const bool active = fsrTemporalActive || dlssTemporalActive || dlaaPostActive;
+
+	OCUExternalUpscalerMethod method = OCU_EXTERNAL_UPSCALER_NONE;
+	if (fsrTemporalActive)
+		method = cfg.FsrNativeAA() ? OCU_EXTERNAL_UPSCALER_FSR_NATIVE_AA : OCU_EXTERNAL_UPSCALER_FSR3;
+	else if (dlssTemporalActive)
+		method = (cfg.DlssPreset() == 4) ? OCU_EXTERNAL_UPSCALER_DLAA : OCU_EXTERNAL_UPSCALER_DLSS;
+	else if (dlaaPostActive)
+		method = OCU_EXTERNAL_UPSCALER_DLAA;
+
+	uint32_t flags = 0;
+	if (cfg.DlssEnabled())
+		flags |= OCU_EXTERNAL_UPSCALER_FLAG_DLSS;
+	if (cfg.FsrEnabled())
+		flags |= OCU_EXTERNAL_UPSCALER_FLAG_FSR3;
+	if (cfg.FsrNativeAA())
+		flags |= OCU_EXTERNAL_UPSCALER_FLAG_FSR_NATIVE_AA;
+	if (cfg.DlaaEnabled() || (cfg.DlssEnabled() && cfg.DlssPreset() == 4))
+		flags |= OCU_EXTERNAL_UPSCALER_FLAG_DLAA;
+
+	const float renderScale = active ? std::max(0.1f, std::min(1.0f, cfg.FsrRenderScale())) : 1.0f;
+	const float mipBias = active ? external_upscaler_mip_bias(renderScale) : 0.0f;
+	PublishExternalUpscalerState(
+	    active,
+	    method,
+	    renderScale,
+	    mipBias,
+	    -1.0f,
+	    static_cast<uint32_t>(cfg.DlssPreset()),
+	    flags);
 }
 
 static int wini_parse(const wchar_t* filename, ini_handler handler, void* user)
@@ -527,8 +579,11 @@ Config::Config()
 		}
 		OOVR_LOGF("DLAA: Enabling DLSS in DLAA mode (preset 4, renderScale=%.2f)", fsrRenderScale);
 	}
+
+	publish_external_upscaler_config(*this);
 }
 
 Config::~Config()
 {
+	ShutdownExternalUpscalerState();
 }

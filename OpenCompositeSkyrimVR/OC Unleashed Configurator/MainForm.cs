@@ -33,21 +33,24 @@ namespace OpenCompositeConfigurator
         private Panel _tabVideo = null!;
 
         // Video tab controls
-        private CheckBox _chkDlaaEnabled = null!;
-        private NumericUpDown _nudDlaaLambda = null!;
-        private NumericUpDown _nudDlaaEpsilon = null!;
-        private Label _lblDlaaLambda = null!;
-        private Label _lblDlaaEpsilon = null!;
         private CheckBox _chkFsrEnabled = null!;
+        private CheckBox _chkFsrNativeAA = null!;
         private CheckBox _chkMotionVectorsEnabled = null!;
+        private CheckBox _chkActorMV = null!;
         private CheckBox _chkAswEnabled = null!;
+        private CheckBox _chkAswExperimentalMode = null!;
+        private CheckBox _chkAswBufferEnabled = null!;
+        private CheckBox _chkAswUpscalerReset = null!;
+        private CheckBox _chkAswUpscalerReactiveMask = null!;
         private NumericUpDown _nudAswWarpStrength = null!;
         private NumericUpDown _nudAswRotationScale = null!;
         private NumericUpDown _nudAswTranslationScale = null!;
+        private NumericUpDown _nudAswLocoScale = null!;
         private NumericUpDown _nudAswDepthScale = null!;
         // Advanced ASW + trigger settings (no UI controls — preserved through saves)
         private float _aswNearFadeDepth = 1.5f;
-        private float _aswLocoScale = 0.7f;
+        private float _aswFPControllerScale = 0.45f;
+        private float _aswEdgeFadeWidth = 0.02f;
         private float _aswMVConfidence = 2.5f;
         private float _aswMVPixelScale = 1.0f;
         private float _triggerDeadzone = 0.0f;
@@ -56,16 +59,35 @@ namespace OpenCompositeConfigurator
         private NumericUpDown _nudMotionVectorScale = null!;
         private NumericUpDown _nudFsr3JitterScale = null!;
         private CheckBox _chkFsr3JitterCancellation = null!;
+        private CheckBox _chkFsr3CameraMV = null!;
+        private NumericUpDown _nudFsr3ReactivenessScale = null!;
+        private NumericUpDown _nudFsr3ShadingChangeScale = null!;
+        private NumericUpDown _nudFsr3AccumulationPerFrame = null!;
+        private ComboBox _cmbFsr3DebugMode = null!;
         private NumericUpDown _nudFsr3ViewToMeters = null!;
         private CheckBox _chkCasEnabled = null!;
+        private CheckBox _chkBlueSkyDefenderEnabled = null!;
+        private NumericUpDown _nudBlueSkyLambda = null!;
+        private NumericUpDown _nudBlueSkyEpsilon = null!;
         private NumericUpDown _nudFsrRenderScale = null!;
         private NumericUpDown _nudCasSharpness = null!;
         private Label _lblFsrRenderScale = null!;
         private Label _lblCasSharpness = null!;
         private CheckBox _chkDlssEnabled = null!;
         private ComboBox _cmbDlssPreset = null!;
-        private NumericUpDown _nudDlssSharpness = null!;
-        private Label _lblDlssSharpness = null!;
+        private ComboBox _cmbDlssModel = null!;
+        private NumericUpDown _nudDlssRenderScaleOverride = null!;
+        private NumericUpDown _nudDlssMvScale = null!;
+        private NumericUpDown _nudDlssJitterScale = null!;
+        private CheckBox _chkDlssNgxVerboseLogging = null!;
+
+        // MIP bias controls
+        private CheckBox _chkMipBiasEnabled = null!;
+        private ComboBox _cmbMipBiasMode = null!;
+        private NumericUpDown _nudMipBiasFixed = null!;
+        private NumericUpDown _nudMipBiasOffset = null!;
+        private NumericUpDown _nudDlssMipBiasOffset = null!;
+        private NumericUpDown _nudFsr3MipBiasOffset = null!;
 
         // VRS controls
         private CheckBox _chkVrsEnabled = null!;
@@ -3823,7 +3845,7 @@ namespace OpenCompositeConfigurator
 
             // ── DLSS 4 SUPER RESOLUTION ──
             Panel dlssAdv = null!;
-            var lblDlssSection = MakeSectionLabel("DLSS 4 Super Resolution", leftMargin, y);
+            var lblDlssSection = MakeSectionLabel("NVIDIA DLSS / DLAA", leftMargin, y);
             container.Controls.Add(lblDlssSection);
             var btnDlssAdv = MakeButton("\u25bc Advanced", rightEdge - 100, y + 2, 94, 22);
             btnDlssAdv.Font = new Font("Segoe UI", 7.5f);
@@ -3837,22 +3859,24 @@ namespace OpenCompositeConfigurator
             container.Controls.Add(btnDlssAdv);
             y += 26;
 
-            _chkDlssEnabled = MakeCheckBox("Enable DLSS 4 SR (NVIDIA only)", leftMargin, y);
+            _chkDlssEnabled = MakeCheckBox("Enable DLSS Super Resolution", leftMargin, y);
             _chkDlssEnabled.CheckedChanged += (s, e) =>
             {
                 bool en = _chkDlssEnabled.Checked;
-                _nudDlssSharpness.Enabled = en;
                 _cmbDlssPreset.Enabled = en;
+                _cmbDlssModel.Enabled = en;
+                _nudDlssRenderScaleOverride.Enabled = en;
+                _nudDlssMvScale.Enabled = en;
+                _nudDlssJitterScale.Enabled = en;
                 if (en) {
                     _chkFsrEnabled.Checked = false; // mutually exclusive
                     _chkMotionVectorsEnabled.Checked = true;
-                    _chkFsr3JitterCancellation.Checked = true;
                 }
                 CheckPotatoMode();
             };
             container.Controls.Add(_chkDlssEnabled);
 
-            var lblDlssDesc = MakeLabel("NVIDIA AI upscaling (RTX / GTX 16xx). Mutually exclusive with FSR.",
+            var lblDlssDesc = MakeLabel("NVIDIA NGX upscaling / DLAA. Uses the configured model hint; default is K.",
                 leftMargin + 230, y + 3, rightEdge - leftMargin - 250);
             lblDlssDesc.ForeColor = Color.FromArgb(130, 130, 130);
             lblDlssDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
@@ -3877,28 +3901,14 @@ namespace OpenCompositeConfigurator
                 Enabled = false,
             };
             _cmbDlssPreset.Items.AddRange(new object[] {
-                "Quality (67%)", "Balanced (58%)", "Performance (50%)", "Ultra Perf (33%)" });
-            _cmbDlssPreset.SelectedIndex = 0;
+                "Quality (67%)", "Balanced (58%)", "Performance (50%)", "Ultra Perf (33%)", "DLAA / Native AA", "Ultra Quality (77%)" });
+            _cmbDlssPreset.SelectedIndex = 1;
             _cmbDlssPreset.SelectedIndexChanged += (s, e) =>
             {
-                if (_chkDlssEnabled.Checked && _cmbDlssPreset.SelectedIndex >= 0) {
-                    decimal[] scales = { 0.67m, 0.58m, 0.50m, 0.33m };
-                    _nudFsrRenderScale.Value = scales[_cmbDlssPreset.SelectedIndex];
-                }
+                // DLSS resolves its render scale from dlssPreset/dlssRenderScaleOverride in OCU.
+                // Do not mirror it into the FSR render-scale control; that setting belongs to FSR.
             };
             container.Controls.Add(_cmbDlssPreset);
-
-            // Sharpness
-            _lblDlssSharpness = MakeLabel("Sharpness:", leftMargin + 270, y + 3, 72);
-            container.Controls.Add(_lblDlssSharpness);
-            _nudDlssSharpness = new NumericUpDown
-            {
-                Location = new Point(leftMargin + 346, y), Width = 60,
-                DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.00m,
-                BackColor = Color.FromArgb(35, 37, 50), ForeColor = Color.White,
-                Enabled = false,
-            };
-            container.Controls.Add(_nudDlssSharpness);
             y += 30;
 
             // Quick preset buttons
@@ -3906,14 +3916,17 @@ namespace OpenCompositeConfigurator
             container.Controls.Add(lblDlssPresets);
             int dlssPx = leftMargin + 94;
             var btnDlssQuality = MakeButton("Quality", dlssPx, y, 75, 26);
-            btnDlssQuality.Click += (s, e) => { _chkDlssEnabled.Checked = true; _nudFsrRenderScale.Value = 0.67m; _cmbDlssPreset.SelectedIndex = 0; };
+            btnDlssQuality.Click += (s, e) => { _chkDlssEnabled.Checked = true; _cmbDlssPreset.SelectedIndex = 0; };
             container.Controls.Add(btnDlssQuality); dlssPx += 79;
             var btnDlssBalanced = MakeButton("Balanced", dlssPx, y, 80, 26);
-            btnDlssBalanced.Click += (s, e) => { _chkDlssEnabled.Checked = true; _nudFsrRenderScale.Value = 0.58m; _cmbDlssPreset.SelectedIndex = 1; };
+            btnDlssBalanced.Click += (s, e) => { _chkDlssEnabled.Checked = true; _cmbDlssPreset.SelectedIndex = 1; };
             container.Controls.Add(btnDlssBalanced); dlssPx += 84;
             var btnDlssPerf = MakeButton("Performance", dlssPx, y, 95, 26);
-            btnDlssPerf.Click += (s, e) => { _chkDlssEnabled.Checked = true; _nudFsrRenderScale.Value = 0.50m; _cmbDlssPreset.SelectedIndex = 2; };
+            btnDlssPerf.Click += (s, e) => { _chkDlssEnabled.Checked = true; _cmbDlssPreset.SelectedIndex = 2; };
             container.Controls.Add(btnDlssPerf); dlssPx += 99;
+            var btnDlssDlaa = MakeButton("DLAA", dlssPx, y, 60, 26);
+            btnDlssDlaa.Click += (s, e) => { _chkDlssEnabled.Checked = true; _cmbDlssPreset.SelectedIndex = 4; };
+            container.Controls.Add(btnDlssDlaa); dlssPx += 64;
             var btnDlssOff = MakeButton("Off", dlssPx, y, 55, 26);
             btnDlssOff.BackColor = Color.FromArgb(120, 60, 40);
             btnDlssOff.Click += (s, e) => { _chkDlssEnabled.Checked = false; };
@@ -3925,7 +3938,7 @@ namespace OpenCompositeConfigurator
                 int advW = rightEdge - leftMargin;
                 dlssAdv = new Panel
                 {
-                    Location = new Point(leftMargin, y), Size = new Size(advW, 44),
+                    Location = new Point(leftMargin, y), Size = new Size(advW, 112),
                     BackColor = Color.FromArgb(26, 28, 40), BorderStyle = BorderStyle.FixedSingle, Visible = false,
                 };
                 int ap = 4;
@@ -3940,6 +3953,56 @@ namespace OpenCompositeConfigurator
                 btnDlssClose.BackColor = Color.FromArgb(90, 40, 40);
                 btnDlssClose.Click += (s, e) => { dlssAdv.Visible = false; btnDlssAdv.Text = "\u25bc Advanced"; };
                 dlssAdv.Controls.Add(btnDlssClose);
+                ap += 26;
+
+                dlssAdv.Controls.Add(MakeLabel("Model:", 20, ap + 3, 52));
+                _cmbDlssModel = new ComboBox
+                {
+                    Location = new Point(72, ap), Width = 92,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White,
+                    Enabled = false
+                };
+                _cmbDlssModel.Items.AddRange(new object[] { "Default", "J", "K", "L", "M" });
+                _cmbDlssModel.SelectedIndex = 2;
+                dlssAdv.Controls.Add(_cmbDlssModel);
+
+                dlssAdv.Controls.Add(MakeLabel("Scale override:", 185, ap + 3, 105));
+                _nudDlssRenderScaleOverride = new NumericUpDown
+                {
+                    Location = new Point(292, ap), Width = 70,
+                    DecimalPlaces = 2, Increment = 0.01m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.00m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White,
+                    Enabled = false
+                };
+                dlssAdv.Controls.Add(_nudDlssRenderScaleOverride);
+                var lblScaleOverrideHint = MakeLabel("0 = preset scale; use only for custom testing.", 370, ap + 3, advW - 386);
+                lblScaleOverrideHint.ForeColor = Color.FromArgb(130, 130, 130);
+                lblScaleOverrideHint.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+                dlssAdv.Controls.Add(lblScaleOverrideHint);
+                ap += 26;
+
+                dlssAdv.Controls.Add(MakeLabel("MV scale:", 20, ap + 3, 65));
+                _nudDlssMvScale = new NumericUpDown
+                {
+                    Location = new Point(88, ap), Width = 65,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 2.00m, Value = 1.00m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White,
+                    Enabled = false
+                };
+                dlssAdv.Controls.Add(_nudDlssMvScale);
+
+                dlssAdv.Controls.Add(MakeLabel("Jitter:", 170, ap + 3, 48));
+                _nudDlssJitterScale = new NumericUpDown
+                {
+                    Location = new Point(220, ap), Width = 65,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.40m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White,
+                    Enabled = false
+                };
+                dlssAdv.Controls.Add(_nudDlssJitterScale);
+                _chkDlssNgxVerboseLogging = MakeCheckBox("NGX verbose logging", 310, ap);
+                dlssAdv.Controls.Add(_chkDlssNgxVerboseLogging);
                 container.Controls.Add(dlssAdv);
             }
 
@@ -3948,7 +4011,7 @@ namespace OpenCompositeConfigurator
 
             // ── FSR SUPER RESOLUTION ──
             Panel fsrAdv = null!;
-            var lblFsrSection = MakeSectionLabel("FSR Super Resolution", leftMargin, y);
+            var lblFsrSection = MakeSectionLabel("AMD FSR 3 / Native AA", leftMargin, y);
             container.Controls.Add(lblFsrSection);
             var btnFsrAdv = MakeButton("\u25bc Advanced", rightEdge - 100, y + 2, 94, 22);
             btnFsrAdv.Font = new Font("Segoe UI", 7.5f);
@@ -3963,11 +4026,12 @@ namespace OpenCompositeConfigurator
             container.Controls.Add(btnFsrAdv);
             y += 26;
 
-            _chkFsrEnabled = MakeCheckBox("Enable FSR Upscaling", leftMargin, y);
+            _chkFsrEnabled = MakeCheckBox("Enable FSR 3", leftMargin, y);
             _chkFsrEnabled.CheckedChanged += (s, e) =>
             {
                 bool en = _chkFsrEnabled.Checked;
-                _nudFsrRenderScale.Enabled = en;
+                _chkFsrNativeAA.Enabled = en;
+                _nudFsrRenderScale.Enabled = en && !_chkFsrNativeAA.Checked;
                 if (en) { _chkMotionVectorsEnabled.Checked = true; _chkFsr3JitterCancellation.Checked = true;
                     if (_chkDlssEnabled != null) _chkDlssEnabled.Checked = false; } // mutually exclusive
                 else { _chkMotionVectorsEnabled.Checked = false; _chkFsr3JitterCancellation.Checked = false; }
@@ -3976,6 +4040,20 @@ namespace OpenCompositeConfigurator
             };
             container.Controls.Add(_chkFsrEnabled);
 
+            _chkFsrNativeAA = MakeCheckBox("Native AA", leftMargin + 128, y);
+            _chkFsrNativeAA.Enabled = false;
+            _chkFsrNativeAA.CheckedChanged += (s, e) =>
+            {
+                if (_chkFsrNativeAA.Checked)
+                {
+                    _chkFsrEnabled.Checked = true;
+                    _nudFsrRenderScale.Value = 1.00m;
+                }
+                _nudFsrRenderScale.Enabled = _chkFsrEnabled.Checked && !_chkFsrNativeAA.Checked;
+                UpdateFsrStatus();
+            };
+            container.Controls.Add(_chkFsrNativeAA);
+
             // Render Scale — same row as checkbox, to the right
             _lblFsrRenderScale = MakeLabel("Render Scale:", leftMargin + 230, y + 3, 95);
             container.Controls.Add(_lblFsrRenderScale);
@@ -3983,13 +4061,13 @@ namespace OpenCompositeConfigurator
             _nudFsrRenderScale = new NumericUpDown
             {
                 Location = new Point(leftMargin + 325, y), Width = 70,
-                DecimalPlaces = 2, Increment = 0.01m, Minimum = 0.50m, Maximum = 1.00m, Value = 0.77m,
+                DecimalPlaces = 2, Increment = 0.01m, Minimum = 0.33m, Maximum = 1.00m, Value = 0.67m,
                 BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White, Enabled = false
             };
             _nudFsrRenderScale.ValueChanged += (s, e) => UpdateFsrStatus();
             container.Controls.Add(_nudFsrRenderScale);
 
-            var lblScaleHint = MakeLabel("(0.50-1.00, lower = more GPU savings)", leftMargin + 400, y + 3, 220);
+            var lblScaleHint = MakeLabel("(0.33-1.00, lower = more GPU savings)", leftMargin + 400, y + 3, 220);
             lblScaleHint.ForeColor = Color.FromArgb(110, 110, 110);
             lblScaleHint.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
             container.Controls.Add(lblScaleHint);
@@ -4001,7 +4079,7 @@ namespace OpenCompositeConfigurator
                 fsrAdv = new Panel
                 {
                     Location = new Point(leftMargin, y),
-                    Size = new Size(advW, 200),
+                    Size = new Size(advW, 278),
                     BackColor = Color.FromArgb(26, 28, 40),
                     BorderStyle = BorderStyle.FixedSingle,
                     Visible = false
@@ -4028,7 +4106,11 @@ namespace OpenCompositeConfigurator
                 // Motion Vectors checkbox
                 _chkMotionVectorsEnabled = MakeCheckBox("Enable Motion Vectors", 20, ap);
                 fsrAdv.Controls.Add(_chkMotionVectorsEnabled);
-                var lblMvDesc = MakeLabel("Feeds Skyrim motion data from SKSE plugin to FSR 3. Not used by OCU ASW.", 224, ap + 3, advW - 240);
+                _chkActorMV = MakeCheckBox("Actor MV", 170, ap);
+                fsrAdv.Controls.Add(_chkActorMV);
+                _chkFsr3CameraMV = MakeCheckBox("Camera MV", 270, ap);
+                fsrAdv.Controls.Add(_chkFsr3CameraMV);
+                var lblMvDesc = MakeLabel("SKSE/game, actor, and camera motion vectors feed temporal upscalers and ASW.", 395, ap + 3, advW - 411);
                 lblMvDesc.ForeColor = Color.FromArgb(130, 130, 130);
                 lblMvDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
                 fsrAdv.Controls.Add(lblMvDesc);
@@ -4056,7 +4138,7 @@ namespace OpenCompositeConfigurator
                 _nudFsr3Sharpness = new NumericUpDown
                 {
                     Location = new Point(135, ap), Width = 70,
-                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.50m,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.30m,
                     BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
                 };
                 fsrAdv.Controls.Add(_nudFsr3Sharpness);
@@ -4072,7 +4154,7 @@ namespace OpenCompositeConfigurator
                 _nudFsr3JitterScale = new NumericUpDown
                 {
                     Location = new Point(120, ap), Width = 70,
-                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 1.00m,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.30m,
                     BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
                 };
                 fsrAdv.Controls.Add(_nudFsr3JitterScale);
@@ -4105,6 +4187,48 @@ namespace OpenCompositeConfigurator
                 lblV2mDesc.ForeColor = Color.FromArgb(130, 130, 130);
                 lblV2mDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
                 fsrAdv.Controls.Add(lblV2mDesc);
+                ap += 26;
+
+                fsrAdv.Controls.Add(MakeLabel("Reactiveness:", 20, ap + 3, 100));
+                _nudFsr3ReactivenessScale = new NumericUpDown
+                {
+                    Location = new Point(120, ap), Width = 70,
+                    DecimalPlaces = 2, Increment = 0.10m, Minimum = 0.00m, Maximum = 8.00m, Value = 2.00m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+                };
+                fsrAdv.Controls.Add(_nudFsr3ReactivenessScale);
+
+                fsrAdv.Controls.Add(MakeLabel("Shading:", 210, ap + 3, 60));
+                _nudFsr3ShadingChangeScale = new NumericUpDown
+                {
+                    Location = new Point(272, ap), Width = 70,
+                    DecimalPlaces = 2, Increment = 0.10m, Minimum = 0.00m, Maximum = 8.00m, Value = 2.00m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+                };
+                fsrAdv.Controls.Add(_nudFsr3ShadingChangeScale);
+
+                fsrAdv.Controls.Add(MakeLabel("Accum/frame:", 360, ap + 3, 88));
+                _nudFsr3AccumulationPerFrame = new NumericUpDown
+                {
+                    Location = new Point(448, ap), Width = 70,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 1.00m, Value = 0.20m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+                };
+                fsrAdv.Controls.Add(_nudFsr3AccumulationPerFrame);
+                ap += 26;
+
+                fsrAdv.Controls.Add(MakeLabel("Debug view:", 20, ap + 3, 85));
+                _cmbFsr3DebugMode = new ComboBox
+                {
+                    Location = new Point(105, ap), Width = 195,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+                };
+                _cmbFsr3DebugMode.Items.AddRange(new object[] {
+                    "Off", "FSR overlay", "Bypass", "Depth", "Final MV",
+                    "Residual MV", "Raw bridge MV", "Bridge fallback", "Reactive mask" });
+                _cmbFsr3DebugMode.SelectedIndex = 0;
+                fsrAdv.Controls.Add(_cmbFsr3DebugMode);
 
                 container.Controls.Add(fsrAdv);
             }
@@ -4128,28 +4252,33 @@ namespace OpenCompositeConfigurator
 
             int px = leftMargin + 78;
             var btnQuality = MakeButton("Quality", px, y, 80, 26);
-            btnQuality.Click += (s, e) => { _chkFsrEnabled.Checked = true; _chkCasEnabled.Checked = true; _nudFsrRenderScale.Value = 0.85m; _nudCasSharpness.Value = 0.15m; };
+            btnQuality.Click += (s, e) => { _chkFsrNativeAA.Checked = false; _chkFsrEnabled.Checked = true; _nudFsrRenderScale.Value = 0.67m; };
             container.Controls.Add(btnQuality);
             px += 84;
 
             var btnBalanced = MakeButton("Balanced", px, y, 85, 26);
-            btnBalanced.Click += (s, e) => { _chkFsrEnabled.Checked = true; _chkCasEnabled.Checked = true; _nudFsrRenderScale.Value = 0.77m; _nudCasSharpness.Value = 0.20m; };
+            btnBalanced.Click += (s, e) => { _chkFsrNativeAA.Checked = false; _chkFsrEnabled.Checked = true; _nudFsrRenderScale.Value = 0.59m; };
             container.Controls.Add(btnBalanced);
             px += 89;
 
             var btnPerformance = MakeButton("Performance", px, y, 95, 26);
-            btnPerformance.Click += (s, e) => { _chkFsrEnabled.Checked = true; _chkCasEnabled.Checked = true; _nudFsrRenderScale.Value = 0.67m; _nudCasSharpness.Value = 0.30m; };
+            btnPerformance.Click += (s, e) => { _chkFsrNativeAA.Checked = false; _chkFsrEnabled.Checked = true; _nudFsrRenderScale.Value = 0.50m; };
             container.Controls.Add(btnPerformance);
             px += 99;
 
             var btnUltra = MakeButton("Ultra Perf", px, y, 85, 26);
-            btnUltra.Click += (s, e) => { _chkFsrEnabled.Checked = true; _chkCasEnabled.Checked = true; _nudFsrRenderScale.Value = 0.50m; _nudCasSharpness.Value = 0.40m; };
+            btnUltra.Click += (s, e) => { _chkFsrNativeAA.Checked = false; _chkFsrEnabled.Checked = true; _nudFsrRenderScale.Value = 0.33m; };
             container.Controls.Add(btnUltra);
+            px += 89;
+
+            var btnNativeAA = MakeButton("Native AA", px, y, 85, 26);
+            btnNativeAA.Click += (s, e) => { _chkFsrEnabled.Checked = true; _chkFsrNativeAA.Checked = true; _nudFsrRenderScale.Value = 1.00m; };
+            container.Controls.Add(btnNativeAA);
             px += 89;
 
             var btnOff = MakeButton("Off", px, y, 55, 26);
             btnOff.BackColor = Color.FromArgb(120, 60, 40);
-            btnOff.Click += (s, e) => { _chkFsrEnabled.Checked = false; _nudFsrRenderScale.Value = 0.77m; };
+            btnOff.Click += (s, e) => { _chkFsrNativeAA.Checked = false; _chkFsrEnabled.Checked = false; _nudFsrRenderScale.Value = 0.67m; };
             container.Controls.Add(btnOff);
             y += 34;
 
@@ -4188,7 +4317,7 @@ namespace OpenCompositeConfigurator
                 aswAdv = new Panel
                 {
                     Location = new Point(leftMargin, y),
-                    Size = new Size(advW, 148),
+                    Size = new Size(advW, 226),
                     BackColor = Color.FromArgb(26, 28, 40),
                     BorderStyle = BorderStyle.FixedSingle,
                     Visible = false
@@ -4210,6 +4339,16 @@ namespace OpenCompositeConfigurator
                 btnAswClose.BackColor = Color.FromArgb(90, 40, 40);
                 btnAswClose.Click += (s, e) => { aswAdv.Visible = false; btnAswAdv.Text = "\u25bc Advanced"; };
                 aswAdv.Controls.Add(btnAswClose);
+                ap += 26;
+
+                _chkAswExperimentalMode = MakeCheckBox("Experimental mode", 20, ap);
+                aswAdv.Controls.Add(_chkAswExperimentalMode);
+                _chkAswUpscalerReactiveMask = MakeCheckBox("Upscaler reactive mask", 180, ap);
+                aswAdv.Controls.Add(_chkAswUpscalerReactiveMask);
+                _chkAswBufferEnabled = MakeCheckBox("Buffered scheduling", 380, ap);
+                aswAdv.Controls.Add(_chkAswBufferEnabled);
+                _chkAswUpscalerReset = MakeCheckBox("Reset upscaler history", 560, ap);
+                aswAdv.Controls.Add(_chkAswUpscalerReset);
                 ap += 26;
 
                 // Warp Strength
@@ -4260,6 +4399,21 @@ namespace OpenCompositeConfigurator
                 aswAdv.Controls.Add(lblTransDesc);
                 ap += 26;
 
+                var lblLocoScale = MakeLabel("Loco Scale:", 20, ap + 3, 100);
+                aswAdv.Controls.Add(lblLocoScale);
+                _nudAswLocoScale = new NumericUpDown
+                {
+                    Location = new Point(120, ap), Width = 70,
+                    DecimalPlaces = 2, Increment = 0.05m, Minimum = 0.00m, Maximum = 3.00m, Value = 0.70m,
+                    BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+                };
+                aswAdv.Controls.Add(_nudAswLocoScale);
+                var lblLocoDesc = MakeLabel("Game locomotion contribution to ASW warp. Default 0.70.", 195, ap + 3, advW - 211);
+                lblLocoDesc.ForeColor = Color.FromArgb(130, 130, 130);
+                lblLocoDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+                aswAdv.Controls.Add(lblLocoDesc);
+                ap += 26;
+
                 // Depth Scale
                 var lblDepthScale = MakeLabel("Depth Scale:", 20, ap + 3, 100);
                 aswAdv.Controls.Add(lblDepthScale);
@@ -4285,8 +4439,8 @@ namespace OpenCompositeConfigurator
             Panel aaAdv = null!;
             int rowStartY = y;
 
-            // LEFT COLUMN: Anti-Aliasing (DLAA)
-            var lblAASection = MakeSectionLabel("Anti-Aliasing (DLAA)", leftMargin, y);
+            // LEFT COLUMN: Anti-Aliasing / post processing
+            var lblAASection = MakeSectionLabel("Post AA", leftMargin, y);
             container.Controls.Add(lblAASection);
 
             // RIGHT COLUMN: CAS Sharpening
@@ -4305,15 +4459,14 @@ namespace OpenCompositeConfigurator
             container.Controls.Add(btnAaAdv);
             y += 26;
 
-            // LEFT: DLAA checkbox
-            _chkDlaaEnabled = MakeCheckBox("DLAA Anti-Aliasing", leftMargin, y);
-            _chkDlaaEnabled.CheckedChanged += (s, e) =>
+            _chkBlueSkyDefenderEnabled = MakeCheckBox("BlueSkyDefender Post-AA", leftMargin, y);
+            _chkBlueSkyDefenderEnabled.CheckedChanged += (s, e) =>
             {
-                bool en = _chkDlaaEnabled.Checked;
-                _nudDlaaLambda.Enabled = en;
-                _nudDlaaEpsilon.Enabled = en;
+                bool en = _chkBlueSkyDefenderEnabled.Checked;
+                _nudBlueSkyLambda.Enabled = en;
+                _nudBlueSkyEpsilon.Enabled = en;
             };
-            container.Controls.Add(_chkDlaaEnabled);
+            container.Controls.Add(_chkBlueSkyDefenderEnabled);
 
             // RIGHT: CAS checkbox
             _chkCasEnabled = MakeCheckBox("Enable CAS Sharpening", col2, y);
@@ -4356,25 +4509,23 @@ namespace OpenCompositeConfigurator
                 ap += 26;
 
                 // LEFT: DLAA tuning — Sensitivity + Threshold
-                _lblDlaaLambda = MakeLabel("Sensitivity:", 20, ap + 3, 75);
-                aaAdv.Controls.Add(_lblDlaaLambda);
-                _nudDlaaLambda = new NumericUpDown
+                aaAdv.Controls.Add(MakeLabel("BlueSky sens:", 20, ap + 3, 90));
+                _nudBlueSkyLambda = new NumericUpDown
                 {
-                    Location = new Point(95, ap), Width = 55,
+                    Location = new Point(112, ap), Width = 55,
                     DecimalPlaces = 1, Increment = 0.1m, Minimum = 1.0m, Maximum = 6.0m, Value = 3.0m,
                     BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White, Enabled = false
                 };
-                aaAdv.Controls.Add(_nudDlaaLambda);
+                aaAdv.Controls.Add(_nudBlueSkyLambda);
 
-                _lblDlaaEpsilon = MakeLabel("Threshold:", 160, ap + 3, 65);
-                aaAdv.Controls.Add(_lblDlaaEpsilon);
-                _nudDlaaEpsilon = new NumericUpDown
+                aaAdv.Controls.Add(MakeLabel("Threshold:", 178, ap + 3, 65));
+                _nudBlueSkyEpsilon = new NumericUpDown
                 {
-                    Location = new Point(228, ap), Width = 55,
+                    Location = new Point(246, ap), Width = 55,
                     DecimalPlaces = 2, Increment = 0.01m, Minimum = 0.01m, Maximum = 0.50m, Value = 0.10m,
                     BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White, Enabled = false
                 };
-                aaAdv.Controls.Add(_nudDlaaEpsilon);
+                aaAdv.Controls.Add(_nudBlueSkyEpsilon);
 
                 // RIGHT: CAS sharpness (col2 - leftMargin = halfWidth + 10)
                 _lblCasSharpness = MakeLabel("Sharpness:", halfWidth + 30, ap + 3, 75);
@@ -4394,8 +4545,8 @@ namespace OpenCompositeConfigurator
                 container.Controls.Add(aaAdv);
             }
 
-            // LEFT: DLAA description
-            var lblDlaaHint = MakeLabel("BlueSkyDefender's Reshade DLAA. Works on all GPUs, but recommended for AMD users.", leftMargin + 20, y, halfWidth - 20);
+            // LEFT: Post-AA description
+            var lblDlaaHint = MakeLabel("Hardware-agnostic post-process AA. NVIDIA DLAA is selected in the DLSS preset above.", leftMargin + 20, y, halfWidth - 20);
             lblDlaaHint.ForeColor = Color.FromArgb(130, 130, 130);
             lblDlaaHint.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
             container.Controls.Add(lblDlaaHint);
@@ -4405,19 +4556,90 @@ namespace OpenCompositeConfigurator
             lblCasDesc.ForeColor = Color.FromArgb(130, 130, 130);
             lblCasDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
             container.Controls.Add(lblCasDesc);
-            y += 20;
-
-            // LEFT: NVIDIA hint
-            var lblDlaaNvidia = MakeLabel("NVIDIA users: consider NVIDIA DLAA via the NVIDIA app.", leftMargin + 20, y, halfWidth - 20);
-            lblDlaaNvidia.ForeColor = Color.FromArgb(110, 110, 110);
-            lblDlaaNvidia.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
-            container.Controls.Add(lblDlaaNvidia);
             y += 22;
 
             container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
             y += 10;
 
             // ── NVIDIA FIXED FOVEATED RENDERING (VRS) ──
+            var lblMipSection = MakeSectionLabel("Texture MIP Bias", leftMargin, y);
+            container.Controls.Add(lblMipSection);
+            y += 26;
+
+            _chkMipBiasEnabled = MakeCheckBox("Correct MIPs for upscaling", leftMargin, y);
+            _chkMipBiasEnabled.CheckedChanged += (s, e) =>
+            {
+                bool en = _chkMipBiasEnabled.Checked;
+                _cmbMipBiasMode.Enabled = en;
+                _nudMipBiasFixed.Enabled = en && _cmbMipBiasMode.SelectedIndex == 2;
+                _nudMipBiasOffset.Enabled = en;
+                _nudDlssMipBiasOffset.Enabled = en;
+                _nudFsr3MipBiasOffset.Enabled = en;
+            };
+            container.Controls.Add(_chkMipBiasEnabled);
+
+            container.Controls.Add(MakeLabel("Mode:", leftMargin + 230, y + 3, 45));
+            _cmbMipBiasMode = new ComboBox
+            {
+                Location = new Point(leftMargin + 275, y), Width = 95,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+            };
+            _cmbMipBiasMode.Items.AddRange(new object[] { "Auto", "Off", "Custom" });
+            _cmbMipBiasMode.SelectedIndex = 0;
+            _cmbMipBiasMode.SelectedIndexChanged += (s, e) =>
+            {
+                _nudMipBiasFixed.Enabled = _chkMipBiasEnabled.Checked && _cmbMipBiasMode.SelectedIndex == 2;
+            };
+            container.Controls.Add(_cmbMipBiasMode);
+
+            container.Controls.Add(MakeLabel("Fixed:", leftMargin + 385, y + 3, 45));
+            _nudMipBiasFixed = new NumericUpDown
+            {
+                Location = new Point(leftMargin + 430, y), Width = 70,
+                DecimalPlaces = 3, Increment = 0.05m, Minimum = -4.00m, Maximum = 4.00m, Value = -0.766m,
+                BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White,
+                Enabled = false
+            };
+            container.Controls.Add(_nudMipBiasFixed);
+
+            var lblMipHint = MakeLabel("Auto = log2(renderScale) plus offsets. DLSS default 0.0; FSR3 default +1.0.", leftMargin + 520, y + 3, rightEdge - leftMargin - 530);
+            lblMipHint.ForeColor = Color.FromArgb(130, 130, 130);
+            lblMipHint.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+            container.Controls.Add(lblMipHint);
+            y += 28;
+
+            container.Controls.Add(MakeLabel("Shared offset:", leftMargin + 20, y + 3, 95));
+            _nudMipBiasOffset = new NumericUpDown
+            {
+                Location = new Point(leftMargin + 115, y), Width = 70,
+                DecimalPlaces = 2, Increment = 0.05m, Minimum = -3.00m, Maximum = 3.00m, Value = 0.00m,
+                BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+            };
+            container.Controls.Add(_nudMipBiasOffset);
+
+            container.Controls.Add(MakeLabel("DLSS offset:", leftMargin + 205, y + 3, 85));
+            _nudDlssMipBiasOffset = new NumericUpDown
+            {
+                Location = new Point(leftMargin + 290, y), Width = 70,
+                DecimalPlaces = 2, Increment = 0.05m, Minimum = -3.00m, Maximum = 3.00m, Value = 0.00m,
+                BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+            };
+            container.Controls.Add(_nudDlssMipBiasOffset);
+
+            container.Controls.Add(MakeLabel("FSR3 offset:", leftMargin + 380, y + 3, 85));
+            _nudFsr3MipBiasOffset = new NumericUpDown
+            {
+                Location = new Point(leftMargin + 465, y), Width = 70,
+                DecimalPlaces = 2, Increment = 0.05m, Minimum = -3.00m, Maximum = 3.00m, Value = 1.00m,
+                BackColor = Color.FromArgb(50, 50, 55), ForeColor = Color.White
+            };
+            container.Controls.Add(_nudFsr3MipBiasOffset);
+            y += 32;
+
+            container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
+            y += 10;
+
             Panel vrsAdv = null!;
             var lblVrsSection = MakeSectionLabel("NVIDIA Fixed Foveated Rendering (VRS)", leftMargin, y);
             container.Controls.Add(lblVrsSection);
@@ -4626,9 +4848,16 @@ namespace OpenCompositeConfigurator
                 return;
             }
 
+            if (_chkFsrNativeAA.Checked)
+            {
+                _lblFsrStatus.Text = "FSR 3 Native AA active: native render scale with FSR temporal AA.";
+                _lblFsrStatus.ForeColor = Color.FromArgb(100, 220, 100);
+                return;
+            }
+
             decimal scale = _nudFsrRenderScale.Value;
             int pctPixels = (int)(scale * scale * 100);
-            string quality = scale >= 0.85m ? "Quality" : scale >= 0.77m ? "Balanced" : scale >= 0.67m ? "Performance" : "Ultra Performance";
+            string quality = scale >= 0.66m ? "Quality" : scale >= 0.58m ? "Balanced" : scale >= 0.49m ? "Performance" : "Ultra Performance";
             _lblFsrStatus.Text = $"FSR 3 active: rendering {scale:0.00}x ({pctPixels}% pixels) \u2014 {quality} mode";
             _lblFsrStatus.ForeColor = Color.FromArgb(100, 220, 100);
         }
@@ -4996,50 +5225,58 @@ namespace OpenCompositeConfigurator
             _nudRightPosY.Enabled = _chkRightPosition.Checked;
             _nudRightPosZ.Enabled = _chkRightPosition.Checked;
 
-            // DLAA settings
-            _chkDlaaEnabled.Checked = ParseBool(_ini.Get("", "dlaaEnabled", "false"));
-            if (float.TryParse(_ini.Get("", "dlaaLambda", "3.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dlL))
-                _nudDlaaLambda.Value = (decimal)Math.Clamp(dlL, 1.0f, 6.0f);
-            if (float.TryParse(_ini.Get("", "dlaaEpsilon", "0.1"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dlE))
-                _nudDlaaEpsilon.Value = (decimal)Math.Clamp(dlE, 0.01f, 0.50f);
-            {
-                bool en = _chkDlaaEnabled.Checked;
-                _nudDlaaLambda.Enabled = en;
-                _nudDlaaEpsilon.Enabled = en;
-            }
-
             // FSR settings
             _chkFsrEnabled.Checked = ParseBool(_ini.Get("", "fsrEnabled", "false"));
-            if (float.TryParse(_ini.Get("", "fsrRenderScale", "0.77"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float frs))
-                _nudFsrRenderScale.Value = (decimal)Math.Clamp(frs, 0.5f, 1.0f);
+            _chkFsrNativeAA.Checked = ParseBool(_ini.Get("", "fsrNativeAA", "false"));
+            if (float.TryParse(_ini.Get("", "fsrRenderScale", "0.67"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float frs))
+                _nudFsrRenderScale.Value = (decimal)Math.Clamp(frs, 0.33f, 1.0f);
             {
                 bool en = _chkFsrEnabled.Checked;
-                _nudFsrRenderScale.Enabled = en;
+                _chkFsrNativeAA.Enabled = en;
+                _nudFsrRenderScale.Enabled = en && !_chkFsrNativeAA.Checked;
             }
             // DLSS settings
             _chkDlssEnabled.Checked = ParseBool(_ini.Get("", "dlssEnabled", "false"));
-            if (int.TryParse(_ini.Get("", "dlssPreset", "0"), out int dlssPreset))
-                _cmbDlssPreset.SelectedIndex = Math.Clamp(dlssPreset, 0, 3);
-            if (float.TryParse(_ini.Get("", "dlssSharpness", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dlssSh))
-                _nudDlssSharpness.Value = (decimal)Math.Clamp(dlssSh, 0f, 1f);
-            { bool en = _chkDlssEnabled.Checked; _nudDlssSharpness.Enabled = en; _cmbDlssPreset.Enabled = en; }
+            if (int.TryParse(_ini.Get("", "dlssPreset", "1"), out int dlssPreset))
+                _cmbDlssPreset.SelectedIndex = Math.Clamp(dlssPreset, 0, 5);
+            string dlssModel = _ini.Get("", "dlssModel", "K").Trim();
+            _cmbDlssModel.SelectedIndex = dlssModel.Equals("default", StringComparison.OrdinalIgnoreCase) || dlssModel.Equals("auto", StringComparison.OrdinalIgnoreCase) || dlssModel == "0"
+                ? 0
+                : Math.Max(0, _cmbDlssModel.Items.IndexOf(dlssModel.ToUpperInvariant()));
+            if (float.TryParse(_ini.Get("", "dlssRenderScaleOverride", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float drso))
+                _nudDlssRenderScaleOverride.Value = (decimal)Math.Clamp(drso, 0f, 1f);
+            if (float.TryParse(_ini.Get("", "dlssMvScale", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dmv))
+                _nudDlssMvScale.Value = (decimal)Math.Clamp(dmv, 0f, 2f);
+            if (float.TryParse(_ini.Get("", "dlssJitterScale", "0.4"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float djs))
+                _nudDlssJitterScale.Value = (decimal)Math.Clamp(djs, 0f, 1f);
+            _chkDlssNgxVerboseLogging.Checked = ParseBool(_ini.Get("", "dlssNgxVerboseLogging", "false"));
+            { bool en = _chkDlssEnabled.Checked; _cmbDlssPreset.Enabled = en; _cmbDlssModel.Enabled = en; _nudDlssRenderScaleOverride.Enabled = en; _nudDlssMvScale.Enabled = en; _nudDlssJitterScale.Enabled = en; }
 
             _chkMotionVectorsEnabled.Checked = ParseBool(_ini.Get("", "motionVectorsEnabled", "true"));
+            _chkActorMV.Checked = ParseBool(_ini.Get("", "actorMV", "true"));
             if (float.TryParse(_ini.Get("", "motionVectorScale", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float mvs))
                 _nudMotionVectorScale.Value = (decimal)Math.Clamp(mvs, 0.1f, 2.0f);
             _chkAswEnabled.Checked = ParseBool(_ini.Get("", "aswEnabled", "false"));
+            _chkAswExperimentalMode.Checked = ParseBool(_ini.Get("", "aswExperimentalMode", "false"));
+            _chkAswBufferEnabled.Checked = ParseBool(_ini.Get("", "aswBufferEnabled", "false"));
+            _chkAswUpscalerReset.Checked = ParseBool(_ini.Get("", "aswUpscalerReset", "false"));
+            _chkAswUpscalerReactiveMask.Checked = ParseBool(_ini.Get("", "aswUpscalerReactiveMask", "true"));
             if (float.TryParse(_ini.Get("", "aswWarpStrength", "1.00"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float aws))
                 _nudAswWarpStrength.Value = (decimal)Math.Clamp(aws, 0f, 3f);
             if (float.TryParse(_ini.Get("", "aswRotationScale", "1.00"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ars))
                 _nudAswRotationScale.Value = (decimal)Math.Clamp(ars, 0f, 2f);
             if (float.TryParse(_ini.Get("", "aswTranslationScale", "1.00"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ats))
                 _nudAswTranslationScale.Value = (decimal)Math.Clamp(ats, 0f, 3f);
+            if (float.TryParse(_ini.Get("", "aswLocoScale", "0.70"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float alsNud))
+                _nudAswLocoScale.Value = (decimal)Math.Clamp(alsNud, 0f, 3f);
             if (float.TryParse(_ini.Get("", "aswDepthScale", "1.00"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ads))
                 _nudAswDepthScale.Value = (decimal)Math.Clamp(ads, 0f, 2f);
             if (float.TryParse(_ini.Get("", "aswNearFadeDepth", "1.5"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float anfd))
                 _aswNearFadeDepth = Math.Clamp(anfd, 0f, 10f);
-            if (float.TryParse(_ini.Get("", "aswLocoScale", "0.7"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float als))
-                _aswLocoScale = Math.Clamp(als, 0f, 3f);
+            if (float.TryParse(_ini.Get("", "aswFPControllerScale", "0.45"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float afp))
+                _aswFPControllerScale = Math.Clamp(afp, 0f, 3f);
+            if (float.TryParse(_ini.Get("", "aswEdgeFadeWidth", "0.02"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float aef))
+                _aswEdgeFadeWidth = Math.Clamp(aef, 0f, 1f);
             if (float.TryParse(_ini.Get("", "aswMVConfidence", "2.5"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float amc))
                 _aswMVConfidence = Math.Clamp(amc, 0f, 5f);
             if (float.TryParse(_ini.Get("", "aswMVPixelScale", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float amps))
@@ -5048,22 +5285,77 @@ namespace OpenCompositeConfigurator
                 _triggerDeadzone = Math.Clamp(tdz, 0f, 0.5f);
             if (float.TryParse(_ini.Get("", "triggerMax", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float tmax))
                 _triggerMax = Math.Clamp(tmax, 0.5f, 1.0f);
-            if (float.TryParse(_ini.Get("", "fsr3Sharpness", "0.5"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float f3s))
+            if (float.TryParse(_ini.Get("", "fsr3Sharpness", "0.3"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float f3s))
                 _nudFsr3Sharpness.Value = (decimal)Math.Clamp(f3s, 0f, 1f);
-            if (float.TryParse(_ini.Get("", "fsr3JitterScale", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fjs))
+            if (float.TryParse(_ini.Get("", "fsr3JitterScale", "0.3"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fjs))
                 _nudFsr3JitterScale.Value = (decimal)Math.Clamp(fjs, 0f, 1f);
-            _chkFsr3JitterCancellation.Checked = ParseBool(_ini.Get("", "fsr3JitterCancellation", "true"));
+            _chkFsr3JitterCancellation.Checked = ParseBool(_ini.Get("", "fsr3JitterCancellation", "false"));
+            _chkFsr3CameraMV.Checked = ParseBool(_ini.Get("", "fsr3CameraMV", "true"));
             if (float.TryParse(_ini.Get("", "fsr3ViewToMeters", "0.01428"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fv2m))
                 _nudFsr3ViewToMeters.Value = (decimal)Math.Clamp(fv2m, 0.001f, 0.1f);
+            if (float.TryParse(_ini.Get("", "fsr3ReactivenessScale", "2.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float frct))
+                _nudFsr3ReactivenessScale.Value = (decimal)Math.Clamp(frct, 0f, 8f);
+            if (float.TryParse(_ini.Get("", "fsr3ShadingChangeScale", "2.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fshade))
+                _nudFsr3ShadingChangeScale.Value = (decimal)Math.Clamp(fshade, 0f, 8f);
+            if (float.TryParse(_ini.Get("", "fsr3AccumulationPerFrame", "0.20"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float facc))
+                _nudFsr3AccumulationPerFrame.Value = (decimal)Math.Clamp(facc, 0f, 1f);
+            if (int.TryParse(_ini.Get("", "fsr3DebugMode", "0"), out int fdbg))
+                _cmbFsr3DebugMode.SelectedIndex = Math.Clamp(fdbg, 0, _cmbFsr3DebugMode.Items.Count - 1);
             UpdateFsrStatus();
 
             // CAS settings
             _chkCasEnabled.Checked = ParseBool(_ini.Get("", "casEnabled", "false"));
-            if (float.TryParse(_ini.Get("", "fsrSharpness", "0.2"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fsh))
+            if (float.TryParse(_ini.Get("", "casSharpness", _ini.Get("", "fsrSharpness", "0.5")), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fsh))
                 _nudCasSharpness.Value = (decimal)Math.Clamp(fsh, 0f, 1f);
             {
                 bool en = _chkCasEnabled.Checked;
                 _nudCasSharpness.Enabled = en;
+            }
+
+            _chkBlueSkyDefenderEnabled.Checked = ParseBool(_ini.Get("", "blueSkyDefenderEnabled", _ini.Get("", "fsr3PostAAEnabled", "false")));
+            if (float.TryParse(_ini.Get("", "blueSkyDefenderLambda", _ini.Get("", "fsr3PostAALambda", "3.0")), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float bsl))
+                _nudBlueSkyLambda.Value = (decimal)Math.Clamp(bsl, 1f, 6f);
+            if (float.TryParse(_ini.Get("", "blueSkyDefenderEpsilon", _ini.Get("", "fsr3PostAAEpsilon", "0.10")), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float bse))
+                _nudBlueSkyEpsilon.Value = (decimal)Math.Clamp(bse, 0.01f, 0.50f);
+            {
+                bool en = _chkBlueSkyDefenderEnabled.Checked;
+                _nudBlueSkyLambda.Enabled = en;
+                _nudBlueSkyEpsilon.Enabled = en;
+            }
+
+            // MIP bias settings
+            _chkMipBiasEnabled.Checked = ParseBool(_ini.Get("", "mipBiasEnabled", "true"));
+            string mipBias = _ini.Get("", "mipBias", "auto").Trim();
+            if (mipBias.Equals("off", StringComparison.OrdinalIgnoreCase)
+                || mipBias.Equals("false", StringComparison.OrdinalIgnoreCase)
+                || mipBias.Equals("disabled", StringComparison.OrdinalIgnoreCase)
+                || mipBias.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                _cmbMipBiasMode.SelectedIndex = 1;
+            }
+            else if (mipBias.Equals("auto", StringComparison.OrdinalIgnoreCase) || mipBias.Equals("default", StringComparison.OrdinalIgnoreCase) || mipBias.Length == 0)
+            {
+                _cmbMipBiasMode.SelectedIndex = 0;
+            }
+            else
+            {
+                _cmbMipBiasMode.SelectedIndex = 2;
+                if (float.TryParse(mipBias, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float mbf))
+                    _nudMipBiasFixed.Value = (decimal)Math.Clamp(mbf, -4f, 4f);
+            }
+            if (float.TryParse(_ini.Get("", "mipBiasOffset", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float mbo))
+                _nudMipBiasOffset.Value = (decimal)Math.Clamp(mbo, -3f, 3f);
+            if (float.TryParse(_ini.Get("", "dlssMipBiasOffset", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dmbo))
+                _nudDlssMipBiasOffset.Value = (decimal)Math.Clamp(dmbo, -3f, 3f);
+            if (float.TryParse(_ini.Get("", "fsr3MipBiasOffset", "1.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fmbo))
+                _nudFsr3MipBiasOffset.Value = (decimal)Math.Clamp(fmbo, -3f, 3f);
+            {
+                bool en = _chkMipBiasEnabled.Checked;
+                _cmbMipBiasMode.Enabled = en;
+                _nudMipBiasFixed.Enabled = en && _cmbMipBiasMode.SelectedIndex == 2;
+                _nudMipBiasOffset.Enabled = en;
+                _nudDlssMipBiasOffset.Enabled = en;
+                _nudFsr3MipBiasOffset.Enabled = en;
             }
 
             // VRS settings
@@ -5126,6 +5418,12 @@ namespace OpenCompositeConfigurator
             _ini.Set("", "enableAudioSwitch", _chkAudioSwitch.Checked ? "true" : "false");
             _ini.Set("", "audioDeviceName", _txtAudioDevice.Text);
 
+            // Legacy Post-AA DLAA UI was removed. NVIDIA DLAA is now selected with dlssPreset=4.
+            _ini.Set("", "dlaaEnabled", "false");
+            _ini.Remove("", "dlaaLambda");
+            _ini.Remove("", "dlaaEpsilon");
+            _ini.Remove("", "dlssSharpness");
+
             if (_gameType == "skyrim")
             {
                 _ini.Set("", "hapticStrength", _nudHapticStrength.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
@@ -5164,26 +5462,41 @@ namespace OpenCompositeConfigurator
                 _ini.Set("", "rightZPosition", _nudRightPosZ.Value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
             }
 
-            // DLAA settings
-            _ini.Set("", "dlaaEnabled", _chkDlaaEnabled.Checked ? "true" : "false");
-            _ini.Set("", "dlaaLambda", _nudDlaaLambda.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
-            _ini.Set("", "dlaaEpsilon", _nudDlaaEpsilon.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
-
             // FSR settings
             _ini.Set("", "fsrEnabled", _chkFsrEnabled.Checked ? "true" : "false");
+            _ini.Set("", "fsrNativeAA", _chkFsrNativeAA.Checked ? "true" : "false");
             _ini.Set("", "fsrRenderScale", _nudFsrRenderScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "dlssEnabled", _chkDlssEnabled.Checked ? "true" : "false");
             _ini.Set("", "dlssPreset", _cmbDlssPreset.SelectedIndex.ToString());
-            _ini.Set("", "dlssSharpness", _nudDlssSharpness.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            string dlssModel = _cmbDlssModel.SelectedIndex switch
+            {
+                1 => "J",
+                2 => "K",
+                3 => "L",
+                4 => "M",
+                _ => "default"
+            };
+            _ini.Set("", "dlssModel", dlssModel);
+            _ini.Set("", "dlssRenderScaleOverride", _nudDlssRenderScaleOverride.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "dlssMvScale", _nudDlssMvScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "dlssJitterScale", _nudDlssJitterScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "dlssNgxVerboseLogging", _chkDlssNgxVerboseLogging.Checked ? "true" : "false");
             _ini.Set("", "motionVectorsEnabled", _chkMotionVectorsEnabled.Checked ? "true" : "false");
+            _ini.Set("", "actorMV", _chkActorMV.Checked ? "true" : "false");
             _ini.Set("", "motionVectorScale", _nudMotionVectorScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswEnabled", _chkAswEnabled.Checked ? "true" : "false");
+            _ini.Set("", "aswExperimentalMode", _chkAswExperimentalMode.Checked ? "true" : "false");
+            _ini.Set("", "aswBufferEnabled", _chkAswBufferEnabled.Checked ? "true" : "false");
+            _ini.Set("", "aswUpscalerReset", _chkAswUpscalerReset.Checked ? "true" : "false");
+            _ini.Set("", "aswUpscalerReactiveMask", _chkAswUpscalerReactiveMask.Checked ? "true" : "false");
             _ini.Set("", "aswWarpStrength", _nudAswWarpStrength.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswRotationScale", _nudAswRotationScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswTranslationScale", _nudAswTranslationScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswDepthScale", _nudAswDepthScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "aswLocoScale", _nudAswLocoScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswNearFadeDepth", _aswNearFadeDepth.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
-            _ini.Set("", "aswLocoScale", _aswLocoScale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "aswFPControllerScale", _aswFPControllerScale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "aswEdgeFadeWidth", _aswEdgeFadeWidth.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswMVConfidence", _aswMVConfidence.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "aswMVPixelScale", _aswMVPixelScale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "triggerDeadzone", _triggerDeadzone.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
@@ -5191,11 +5504,34 @@ namespace OpenCompositeConfigurator
             _ini.Set("", "fsr3Sharpness", _nudFsr3Sharpness.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "fsr3JitterScale", _nudFsr3JitterScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "fsr3JitterCancellation", _chkFsr3JitterCancellation.Checked ? "true" : "false");
+            _ini.Set("", "fsr3CameraMV", _chkFsr3CameraMV.Checked ? "true" : "false");
             _ini.Set("", "fsr3ViewToMeters", _nudFsr3ViewToMeters.Value.ToString("0.00000", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3ReactivenessScale", _nudFsr3ReactivenessScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3ShadingChangeScale", _nudFsr3ShadingChangeScale.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3AccumulationPerFrame", _nudFsr3AccumulationPerFrame.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3DebugMode", _cmbFsr3DebugMode.SelectedIndex.ToString());
 
             // CAS settings
             _ini.Set("", "casEnabled", _chkCasEnabled.Checked ? "true" : "false");
+            _ini.Set("", "casSharpness", _nudCasSharpness.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             _ini.Set("", "fsrSharpness", _nudCasSharpness.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "blueSkyDefenderEnabled", _chkBlueSkyDefenderEnabled.Checked ? "true" : "false");
+            _ini.Set("", "blueSkyDefenderLambda", _nudBlueSkyLambda.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "blueSkyDefenderEpsilon", _nudBlueSkyEpsilon.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3PostAAEnabled", "false");
+
+            // MIP bias settings
+            _ini.Set("", "mipBiasEnabled", _chkMipBiasEnabled.Checked ? "true" : "false");
+            string mipBias = _cmbMipBiasMode.SelectedIndex switch
+            {
+                1 => "off",
+                2 => _nudMipBiasFixed.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture),
+                _ => "auto"
+            };
+            _ini.Set("", "mipBias", mipBias);
+            _ini.Set("", "mipBiasOffset", _nudMipBiasOffset.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "dlssMipBiasOffset", _nudDlssMipBiasOffset.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+            _ini.Set("", "fsr3MipBiasOffset", _nudFsr3MipBiasOffset.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
 
             // VRS settings (NVIDIA only)
             _ini.Set("", "vrsEnabled", _chkVrsEnabled.Checked ? "true" : "false");
