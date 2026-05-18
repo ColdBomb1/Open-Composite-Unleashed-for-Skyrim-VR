@@ -3883,7 +3883,7 @@ namespace OpenCompositeConfigurator
             container.Controls.Add(lblDlssDesc);
             y += 30;
 
-            var lblDlssWarn = MakeLabel("\u26a0  Do not run a second upscaler mod alongside this one \u2014 two upscalers conflict and cause visual corruption.",
+            var lblDlssWarn = MakeLabel("\u26a0  When OCU DLSS or FSR 3 is enabled, Community Shaders upscaling is blocked to prevent upscaler conflicts.",
                 leftMargin, y, rightEdge - leftMargin - 10);
             lblDlssWarn.ForeColor = Color.FromArgb(255, 185, 35);
             lblDlssWarn.Font = new Font("Segoe UI", 8f, FontStyle.Bold);
