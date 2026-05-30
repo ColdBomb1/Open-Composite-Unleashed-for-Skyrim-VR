@@ -693,21 +693,23 @@ bool BaseSystem::GetControllerState(vr::TrackedDeviceIndex_t controllerDeviceInd
 	if (ok && controllerDeviceIndex >= 1 && controllerDeviceIndex <= 2) {
 		int hand = (int)controllerDeviceIndex - 1;
 		if (g_kbLaserConsumesTrigger[hand]) {
-			uint64_t triggerMask = vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-			controllerState->ulButtonPressed &= ~triggerMask;
-			controllerState->ulButtonTouched &= ~triggerMask;
+			// Keyboard owns input while laser is on quad. Mask trigger plus the
+			// thumb-rest-adjacent buttons (thumbstick, A/X, ApplicationMenu) for
+			// both press and touch. Quest/Touch controllers have a capacitive
+			// thumb rest that registers as a TOUCH event on those buttons just
+			// from holding the controller normally — without masking, MCM's
+			// "press a key" hotkey-assign mode grabs that touch as an
+			// assignment the moment the user rests their thumb.
+			uint64_t fullMask =
+				vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger) |
+				vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad) |
+				vr::ButtonMaskFromId(vr::k_EButton_A) |
+				vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
+			controllerState->ulButtonPressed &= ~fullMask;
+			controllerState->ulButtonTouched &= ~fullMask;
 			controllerState->rAxis[1].x = 0.0f;
 			controllerState->rAxis[1].y = 0.0f;
 		}
-		// [EXPERIMENTAL — future development] Button masking for BSInputEventQueue
-		// injection. Disabled: causes crashes due to mixed VR-controller + mouse
-		// input modes in Skyrim's engine.
-		// if (g_menuLaserActive) {
-		// 	uint64_t appMenuMask = vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
-		// 	uint64_t aBtnMask = vr::ButtonMaskFromId(vr::k_EButton_A);
-		// 	controllerState->ulButtonPressed &= ~(appMenuMask | aBtnMask);
-		// 	controllerState->ulButtonTouched &= ~(appMenuMask | aBtnMask);
-		// }
 	}
 
 	return ok;
