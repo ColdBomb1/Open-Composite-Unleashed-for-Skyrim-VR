@@ -4305,7 +4305,7 @@ namespace OpenCompositeConfigurator
             _chkAswEnabled.CheckedChanged += (s, e) => { };
             container.Controls.Add(_chkAswEnabled);
 
-            var lblSwDesc = MakeLabel("Doubles frame rate with superior image quality to VD's SSW. All reprojection may cause slight parallax separation. VD's SSW tends to ghost and smear at close range, OCU ASW is cleaner but may show parallax separation on nearby objects. Mitigate with DLSS 4 or FSR 3. Disable SSW in Virtual Desktop when using this, as combining both causes stuttering.", leftMargin + 230, y + 3, rightEdge - leftMargin - 250);
+            var lblSwDesc = MakeLabel("Experimental / future-use reprojection, mainly for Meta/Quest testing. Expect lateral parallax separation on walls, foliage, and overlays during strafing. Use VD/Meta SSW for normal play, and never combine both.", leftMargin + 230, y + 3, rightEdge - leftMargin - 250);
             lblSwDesc.ForeColor = Color.FromArgb(130, 130, 130);
             lblSwDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
             lblSwDesc.Height = 60;
