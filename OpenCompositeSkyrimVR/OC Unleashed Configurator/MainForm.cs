@@ -187,7 +187,7 @@ namespace OpenCompositeConfigurator
         private NumericUpDown _nudRightPosY = null!;
         private NumericUpDown _nudRightPosZ = null!;
 
-        // Ko-fi
+        // Support footer
         private PictureBox _picKofi = null!;
         private Image? _kofiImage;
 
@@ -601,10 +601,11 @@ namespace OpenCompositeConfigurator
             _tabKeyboard.Size = new Size(_tabKeyboard.Width, tallestTab);
             _tabVideo.Size = new Size(_tabVideo.Width, tallestTab);
 
-            // Ko-fi right after the tabs
+            // Support footer right after the tabs
             int kofiY = _tabSettings.Location.Y + tallestTab + 4;
+            const string supportUrl = "https://buymeacoffee.com/coldbomb1f";
 
-            // ── KO-FI footer ──
+            // Support footer
             var kofiSep = new Label
             {
                 Location = new Point(leftMargin, kofiY),
@@ -617,7 +618,7 @@ namespace OpenCompositeConfigurator
             // One line: italic text + bold link + icon
             var lblKofiMsg = new Label
             {
-                Text = "I do this for free and for the love of VR gaming, and I always will. If you want to show some love,",
+                Text = "OCU is maintained for the VR community. If you want to support ColdBomb,",
                 Location = new Point(leftMargin, kofiY),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9f, FontStyle.Italic),
@@ -628,7 +629,7 @@ namespace OpenCompositeConfigurator
             int linkX = leftMargin + lblKofiMsg.PreferredWidth + 4;
             var lblKofiLink = new LinkLabel
             {
-                Text = "support me on Ko-fi",
+                Text = "buy him a coffee",
                 Location = new Point(linkX, kofiY),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -638,7 +639,7 @@ namespace OpenCompositeConfigurator
             };
             lblKofiLink.LinkClicked += (s, e) =>
             {
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://ko-fi.com/wondernutts") { UseShellExecute = true }); }
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(supportUrl) { UseShellExecute = true }); }
                 catch { }
             };
             Controls.Add(lblKofiLink);
@@ -655,12 +656,12 @@ namespace OpenCompositeConfigurator
             };
             _picKofi.Click += (s, e) =>
             {
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://ko-fi.com/wondernutts") { UseShellExecute = true }); }
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(supportUrl) { UseShellExecute = true }); }
                 catch { }
             };
             Controls.Add(_picKofi);
 
-            // Size form to fit tabs + Ko-fi
+            // Size form to fit tabs + support footer
             ClientSize = new Size(ClientSize.Width, kofiY + 26);
         }
 
