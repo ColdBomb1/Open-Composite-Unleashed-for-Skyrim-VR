@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows.Forms;
 
 namespace OpenCompositeConfigurator
@@ -4431,6 +4433,29 @@ namespace OpenCompositeConfigurator
                 aswAdv.Controls.Add(lblDepthDesc);
 
                 container.Controls.Add(aswAdv);
+
+                container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
+                y += 10;
+
+                var lblSteamVrSection = MakeSectionLabel("SteamVR OpenXR Helper", leftMargin, y);
+                container.Controls.Add(lblSteamVrSection);
+                y += 28;
+
+                var btnApplySteamVrProfile = MakeButton("Apply SteamVR OCU Profile", leftMargin, y, 220, 28);
+                btnApplySteamVrProfile.BackColor = Color.FromArgb(65, 80, 55);
+                btnApplySteamVrProfile.Click += BtnApplySteamVrProfile_Click;
+                container.Controls.Add(btnApplySteamVrProfile);
+
+                var btnOpenSteamVrSettings = MakeButton("Open SteamVR Settings Folder", leftMargin + 235, y, 220, 28);
+                btnOpenSteamVrSettings.Click += BtnOpenSteamVrSettingsFolder_Click;
+                container.Controls.Add(btnOpenSteamVrSettings);
+
+                var lblSteamVrDesc = MakeLabel("For SteamVR/OpenXR headsets: patches %LOCALAPPDATA%\\openvr\\steamvr.vrsettings. Use XR Picker or SteamVR to choose the active OpenXR runtime.", leftMargin + 470, y + 3, rightEdge - leftMargin - 490);
+                lblSteamVrDesc.ForeColor = Color.FromArgb(130, 130, 130);
+                lblSteamVrDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+                lblSteamVrDesc.Height = 40;
+                container.Controls.Add(lblSteamVrDesc);
+                y += 48;
             }
 
             container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
@@ -4905,6 +4930,120 @@ namespace OpenCompositeConfigurator
         // ═══════════════════════════════════════════════════════════════════════
         // FILE OPERATIONS
         // ═══════════════════════════════════════════════════════════════════════
+
+        private void BtnApplySteamVrProfile_Click(object? sender, EventArgs e)
+        {
+            string path = GetSteamVrSettingsPath();
+            if (!File.Exists(path))
+            {
+                using var dlg = new OpenFileDialog
+                {
+                    Title = "Select steamvr.vrsettings",
+                    Filter = "SteamVR settings|steamvr.vrsettings|JSON files|*.json|All files|*.*",
+                    CheckFileExists = true,
+                    InitialDirectory = Directory.Exists(GetSteamVrSettingsFolder())
+                        ? GetSteamVrSettingsFolder()
+                        : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+                };
+
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+                path = dlg.FileName;
+            }
+
+            var confirm = MessageBox.Show(
+                "This will back up and patch SteamVR's vrsettings for OCU.\n\nIt does not change your OpenXR runtime. Use XR Picker or SteamVR for that.\n\nContinue?",
+                "Apply SteamVR OCU Profile",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                string backupPath = ApplySteamVrOcuProfile(path);
+                _lblStatus.Text = $"SteamVR OCU profile applied. Backup: {Path.GetFileName(backupPath)}";
+                _lblStatus.ForeColor = Color.FromArgb(100, 200, 100);
+                _lblVideoStatus.Text = _lblStatus.Text;
+                _lblVideoStatus.ForeColor = _lblStatus.ForeColor;
+                MessageBox.Show($"SteamVR settings patched.\n\nBackup created:\n{backupPath}", "SteamVR OCU Profile",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"SteamVR profile failed: {ex.Message}";
+                _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
+                _lblVideoStatus.Text = _lblStatus.Text;
+                _lblVideoStatus.ForeColor = _lblStatus.ForeColor;
+                MessageBox.Show(ex.Message, "SteamVR OCU Profile Failed",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnOpenSteamVrSettingsFolder_Click(object? sender, EventArgs e)
+        {
+            string folder = GetSteamVrSettingsFolder();
+            Directory.CreateDirectory(folder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+
+        private static string GetSteamVrSettingsFolder()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "openvr");
+        }
+
+        private static string GetSteamVrSettingsPath()
+        {
+            return Path.Combine(GetSteamVrSettingsFolder(), "steamvr.vrsettings");
+        }
+
+        private static string ApplySteamVrOcuProfile(string path)
+        {
+            string rawJson = File.ReadAllText(path);
+            JsonObject root = JsonNode.Parse(string.IsNullOrWhiteSpace(rawJson) ? "{}" : rawJson)?.AsObject()
+                ?? throw new InvalidOperationException("SteamVR settings root is not a JSON object.");
+
+            if (root["steamvr"] is not JsonObject steamVr)
+            {
+                steamVr = new JsonObject();
+                root["steamvr"] = steamVr;
+            }
+
+            string dir = Path.GetDirectoryName(path) ?? throw new InvalidOperationException("Invalid SteamVR settings path.");
+            string backupPath = Path.Combine(dir, $"steamvr.vrsettings.backup-{DateTime.Now:yyyyMMdd-HHmmss}");
+            File.Copy(path, backupPath, overwrite: false);
+
+            steamVr["allowSupersampleFiltering"] = false;
+            steamVr["disableAsync"] = true;
+            steamVr["enableHomeApp"] = false;
+            steamVr["framesToThrottle"] = 0;
+            steamVr["motionSmoothing"] = false;
+            steamVr["showAdvancedSettings"] = true;
+            steamVr["showMirrorView"] = false;
+            steamVr["startCompositorFromAppLaunch"] = true;
+            steamVr["startDashboardFromAppLaunch"] = false;
+            steamVr["startMonitorFromAppLaunch"] = false;
+            steamVr["supersampleManualOverride"] = true;
+            steamVr["supersampleScale"] = 1;
+
+            const string throttleShortcut = "frame_wait_throttle_toggle:187,0,0";
+            string existingShortcuts = "";
+            if (steamVr["debugCommandShortcuts"] is JsonValue shortcutValue &&
+                shortcutValue.TryGetValue<string>(out string? shortcutText))
+            {
+                existingShortcuts = shortcutText;
+            }
+
+            if (!existingShortcuts.Contains("frame_wait_throttle_toggle", StringComparison.OrdinalIgnoreCase))
+            {
+                steamVr["debugCommandShortcuts"] = string.IsNullOrWhiteSpace(existingShortcuts)
+                    ? throttleShortcut
+                    : $"{existingShortcuts},{throttleShortcut}";
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(path, root.ToJsonString(options));
+            return backupPath;
+        }
 
         private void BtnBrowse_Click(object? sender, EventArgs e)
         {
