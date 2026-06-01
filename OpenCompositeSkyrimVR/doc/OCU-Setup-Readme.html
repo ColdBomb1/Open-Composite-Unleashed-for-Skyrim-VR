@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Composite Unleashed Setup Readme</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #14151a;
+      --panel: #20222a;
+      --line: #343846;
+      --text: #eceff6;
+      --muted: #aeb5c4;
+      --gold: #ffd43b;
+      --blue: #70b7ff;
+      --green: #69d27f;
+      --red: #e28a72;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    header {
+      padding: 34px 28px 24px;
+      border-bottom: 1px solid var(--line);
+      background: #1a1c22;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; }
+    h1 { margin: 0 0 8px; font-size: 34px; }
+    h2 {
+      margin: 38px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      color: var(--gold);
+    }
+    h3 { margin: 24px 0 8px; color: var(--blue); }
+    p { margin: 8px 0 12px; }
+    a { color: var(--blue); }
+    code {
+      background: #101116;
+      border: 1px solid var(--line);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .lead { color: var(--muted); max-width: 900px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 14px;
+    }
+    .warn {
+      border-left: 4px solid var(--red);
+      background: #241b1a;
+      padding: 12px 14px;
+      margin: 14px 0;
+    }
+    .ok {
+      border-left: 4px solid var(--green);
+      background: #18241c;
+      padding: 12px 14px;
+      margin: 14px 0;
+    }
+    .muted { color: var(--muted); }
+    .button-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .button {
+      display: inline-block;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #2a2d36;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    figure {
+      margin: 14px 0;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      background: #181a20;
+      border-radius: 6px;
+    }
+    figure img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      border: 1px solid #303442;
+      margin-bottom: 8px;
+    }
+    figcaption { color: var(--muted); font-size: 14px; }
+    ul { padding-left: 22px; }
+    ol { padding-left: 24px; }
+    .toc a { display: block; padding: 4px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Open Composite Unleashed Setup Readme</h1>
+    <p class="lead">
+      This guide explains how to set up OCU for Skyrim VR, choose the right OpenXR runtime,
+      use the Configurator safely, and understand the experimental features.
+    </p>
+  </header>
+
+  <main>
+    <section id="support" class="card">
+      <h2>Support The Work</h2>
+      <p>
+        OCU is maintained through active development, testing, and debugging. Historically, there have been many
+        mods that have been out of reach for VR. The goal of OCU is to fundamentally change the Skyrim VR experience
+        into a proper VR game that will work with most mods available to players on desktop. OCU developers put a lot
+        of hard work and dedication into creating, maintaining, and troubleshooting this experience. We do this because
+        we love this community. Any support you can offer that helps further this goal is appreciated.
+      </p>
+      <div class="button-row">
+        <a class="button" href="https://buymeacoffee.com/coldbomb1f">Support ColdBomb</a>
+        <a class="button" href="https://ko-fi.com/wondernutts">Support Wondernutts</a>
+      </div>
+    </section>
+
+    <section id="contents" class="toc">
+      <h2>Contents</h2>
+      <a href="#bindings">Critical: Bindings First</a>
+      <a href="#install">Installation And Root Files</a>
+      <a href="#runtime-model">Runtime Model</a>
+      <a href="#meta">Meta / Quest / Virtual Desktop Setup</a>
+      <a href="#steamvr">SteamVR OpenXR Headsets</a>
+      <a href="#configurator">Configurator Settings</a>
+      <a href="#laser-alignment">Controller And Laser Alignment</a>
+      <a href="#community-shaders">Community Shaders And Upscaling</a>
+      <a href="#asw">ASW Experimental Notes</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+    </section>
+
+    <section id="bindings">
+      <h2>Critical: Bindings First</h2>
+      <div class="warn">
+        Binding conflicts are the number one reason for crashes, broken controls, and strange input behavior.
+        Do not stack old binding files, old SteamVR binding exports, or unrelated controlmap mods on top of OCU.
+      </div>
+      <p>
+        OCU ships with its own binding presets in the Configurator. Use those presets as the source of truth.
+        If you already have custom Skyrim VR bindings, VRIK controlmap edits, or another <code>controlmapvr.txt</code>
+        being supplied by a mod, remove and disable the conflicting file. OCU must control the bindings because
+        multiple keyboard and controller input paths need to block certain game actions to prevent crashes.
+      </p>
+      <h3>Included Presets</h3>
+      <ul>
+        <li><strong>VRIK V2.1.0:</strong> default recommended starting point. This is what most Skyrim VR players use.</li>
+        <li><strong>VR Safe:</strong> reestablishes original VRIK plus the original keyboard layout. Using the keyboard to walk in-game or activate items can crash the game.</li>
+        <li><strong>VRIK Alternate:</strong> alternate VRIK layout.</li>
+        <li><strong>Kvite:</strong> included community preset.</li>
+        <li><strong>Vanilla:</strong> baseline Skyrim VR layout.</li>
+        <li><strong>Vanilla + Oculus Touch Hotkeys:</strong> vanilla-style layout with Oculus Touch hotkey additions.</li>
+      </ul>
+      <div class="ok">
+        Recommended first test: apply one OCU preset, save bindings, restart the game, then test before adding any custom binding changes.
+      </div>
+      <h3>Controller Combo Bindings</h3>
+      <p>
+        Controller combos are configured on the Bindings page and saved to the <code>[combos]</code> section of
+        <code>opencomposite.ini</code>. A combo does not directly rewrite the game action at runtime. It watches
+        controller input, then sends one keyboard scancode. Skyrim then resolves that key through the active
+        <code>controlmapvr.txt</code>.
+      </p>
+      <ul>
+        <li><strong>Multiple buttons:</strong> every selected button must be pressed together for the combo to count.</li>
+        <li><strong>Press:</strong> fires once when all selected buttons are down, then resets after release.</li>
+        <li><strong>Double / Triple / Quad tap:</strong> counts clean combo presses inside the configured timing window.</li>
+        <li><strong>Long press:</strong> fires after all selected buttons are held for the configured timing window.</li>
+        <li><strong>Fire as keyboard key:</strong> sends the selected key scancode directly.</li>
+        <li><strong>Fire as Skyrim action:</strong> looks up that action's controlmap key and sends the matching scancode.</li>
+      </ul>
+      <p>
+        The runtime supports up to 16 combos. Larger button combos are checked before smaller ones, so a combo like
+        <code>Grip + A + B</code> is not eaten by a simpler <code>Grip + A</code> combo first. Combos are disabled
+        while the OCU keyboard is open so keyboard input does not fight itself.
+      </p>
+      <figure>
+        <img src="images/controller-combo-bindings.png" alt="OCU Configurator edit controller combo window">
+        <figcaption>Bindings -> Add/Edit Combo. Select one or more controller buttons, choose the activation mode, then fire a keyboard key or Skyrim action.</figcaption>
+      </figure>
+    </section>
+
+    <section id="install">
+      <h2>Installation And Root Files</h2>
+      <p>
+        OCU is not only a normal Data-folder mod. It includes root files that must land beside <code>SkyrimVR.exe</code>.
+        The most important root files are <code>openvr_api.dll</code> and <code>opencomposite.ini</code>.
+      </p>
+      <div class="warn">
+        If the root files are not deployed to the Skyrim VR game folder, Skyrim will not actually run through OCU.
+      </div>
+      <p>
+        In the Configurator, the game path must point to the folder that contains <code>SkyrimVR.exe</code>.
+        That folder varies by user and mod manager. A heavily modded Skyrim VR install should not live under
+        <code>Program Files (x86)</code>; Windows protected-folder behavior can block writes or make root-file
+        deployment look broken. Use a dedicated Steam library path such as <code>C:\Games\steamapps\common\SkyrimVR</code>
+        or another non-protected folder.
+      </p>
+      <figure>
+        <img src="images/game-folder-path.png" alt="OCU Configurator game folder path field">
+        <figcaption>The Configurator path should point to the real Skyrim VR game folder containing <code>SkyrimVR.exe</code>. The exact path varies by user.</figcaption>
+      </figure>
+      <h3>Mod Organizer 2</h3>
+      <ol>
+        <li>Install OCU as an MO2 mod.</li>
+        <li>Make sure the archive's <code>root</code> folder is deployed or virtualized into the real Skyrim VR game folder.</li>
+        <li>Put the Configurator EXE in the OCU mod folder. The Configurator is designed to save to both the mod folder and the game location.</li>
+        <li>After saving, verify <code>opencomposite.ini</code> and <code>openvr_api.dll</code> are present beside <code>SkyrimVR.exe</code> at launch.</li>
+      </ol>
+      <h3>Vortex</h3>
+      <ol>
+        <li>Install and deploy the OCU package.</li>
+        <li>Verify the root files deploy to the same folder as <code>SkyrimVR.exe</code>, not only into <code>Data</code>.</li>
+        <li>Deploy SKSE/plugin files normally through the mod manager.</li>
+        <li>Run the Configurator, save <code>opencomposite.ini</code>, then restart Skyrim VR.</li>
+      </ol>
+    </section>
+
+    <section id="runtime-model">
+      <h2>Runtime Model</h2>
+      <p>
+        OCU replaces the normal OpenVR path with an OpenXR path. Think of it this way:
+      </p>
+      <div class="grid">
+        <div class="card">
+          <h3>Normal Skyrim VR</h3>
+          <p><code>SkyrimVR -> SteamVR</code></p>
+        </div>
+        <div class="card">
+          <h3>OCU</h3>
+          <p><code>SkyrimVR -> OCU -> active OpenXR runtime</code></p>
+        </div>
+      </div>
+      <p>
+        If you only have one headset, your OpenXR runtime is usually already set to that headset's expected runtime.
+        Enabling OCU makes Skyrim VR use that OpenXR runtime instead of the old SteamVR path. If you switch between
+        multiple headsets, consider using XR Picker to choose the active OpenXR runtime.
+      </p>
+    </section>
+
+    <section id="meta">
+      <h2>Meta / Quest / Virtual Desktop Setup</h2>
+      <h3>Quest Link / Air Link</h3>
+      <p>
+        For wired Link or Air Link, use the Oculus/Meta OpenXR runtime. In this path, OCU sends Skyrim VR through
+        Meta's OpenXR runtime.
+      </p>
+      <p><code>SkyrimVR -> OCU -> Oculus OpenXR</code></p>
+
+      <h3>Virtual Desktop On Quest</h3>
+      <p>
+        Virtual Desktop is mainly relevant for wireless headsets. For normal Quest wireless play through Virtual Desktop,
+        use <strong>VDXR</strong> in Virtual Desktop Streamer.
+      </p>
+      <p><code>SkyrimVR -> OCU -> VDXR</code></p>
+      <figure>
+        <img src="images/virtual-desktop-vdxr-runtime.png" alt="Virtual Desktop Streamer OpenXR runtime dropdown set to VDXR">
+        <figcaption>Virtual Desktop Streamer -> Options -> OpenXR Runtime. Quest wireless users should normally select VDXR, not SteamVR.</figcaption>
+      </figure>
+      <div class="warn">
+        Do not enable the Configurator's auto-switch audio option for Virtual Desktop. Virtual Desktop handles its own audio path.
+      </div>
+    </section>
+
+    <section id="steamvr">
+      <h2>SteamVR OpenXR Headsets</h2>
+      <p>
+        Bigscreen Beyond, Valve Index style setups, and other SteamVR/OpenXR headset paths generally use Steam's OpenXR runtime.
+      </p>
+      <p><code>SkyrimVR -> OCU -> SteamVR OpenXR</code></p>
+      <div class="ok">
+        Normal SteamVR use is simple: enable the OCU mod to use OCU. Disable the OCU mod to return to normal SteamVR.
+      </div>
+      <h3>Wired SteamVR Headsets</h3>
+      <ol>
+        <li>Open SteamVR Settings.</li>
+        <li>Go to <strong>OpenXR</strong>.</li>
+        <li>Click <strong>Set SteamVR as OpenXR Runtime</strong> if SteamVR is not already the active runtime.</li>
+        <li>Open the OCU Configurator and apply the <strong>SteamVR OCU Profile</strong>.</li>
+        <li>Launch Skyrim VR through your mod manager after OCU root files are deployed.</li>
+      </ol>
+      <figure>
+        <img src="images/steamvr-openxr-runtime.png" alt="SteamVR OpenXR runtime settings page">
+        <figcaption>SteamVR Settings -> OpenXR. Wired SteamVR headset users set SteamVR as the active OpenXR runtime here.</figcaption>
+      </figure>
+      <div class="warn">
+        Important: wired SteamVR/OpenXR headset users should apply the SteamVR OCU Profile in the Configurator.
+        This patches SteamVR settings for OCU and backs up the existing <code>steamvr.vrsettings</code> file.
+      </div>
+      <figure>
+        <img src="images/configurator-steamvr-ocu-profile.png" alt="OCU Configurator SteamVR OCU Profile button">
+        <figcaption>OCU Configurator -> Settings -> SteamVR OCU Profile. Apply this profile for wired/native SteamVR OpenXR headset paths.</figcaption>
+      </figure>
+      <div class="warn">
+        Pimax works, but PimaxXR with Index controllers may report controller poses incorrectly.
+        If laser aim is miscalibrated or not aligned, use the laser calibration controls and report working values.
+      </div>
+      <h3>Steam-Native Wireless Note</h3>
+      <p>
+        Future Steam-native wireless headsets or wireless adapters may still use SteamVR as the OpenXR runtime.
+        If the headset's required runtime is SteamVR, use the same SteamVR OpenXR plus SteamVR OCU Profile path.
+        Do not apply this assumption to Quest Virtual Desktop users; those should normally use VDXR.
+      </p>
+      <h3>If SteamVR Still Acts Wrong</h3>
+      <p>
+        Some problems come from global OpenVR/OpenXR changes outside this mod. If you used OpenComposite Switcher before,
+        it may have changed settings that affect other games too. OCU does not automatically undo those global changes
+        because doing so could break another game setup.
+      </p>
+      <p>
+        If disabling the OCU mod does not return Skyrim VR to the normal SteamVR path, check previous OpenComposite
+        Switcher changes and your active OpenXR runtime.
+      </p>
+    </section>
+
+    <section id="configurator">
+      <h2>Configurator Settings</h2>
+      <h3>SteamVR OCU Profile</h3>
+      <p>
+        The SteamVR OCU Profile patches <code>%LOCALAPPDATA%\openvr\steamvr.vrsettings</code> for OCU-friendly SteamVR defaults.
+        It does not change your active OpenXR runtime.
+      </p>
+      <ul>
+        <li><strong>Apply SteamVR OCU Profile:</strong> backs up and patches SteamVR settings.</li>
+        <li><strong>Restore SteamVR Defaults:</strong> backs up and removes the OCU helper overrides.</li>
+        <li><strong>Open SteamVR Settings Folder:</strong> opens the folder containing <code>steamvr.vrsettings</code>.</li>
+      </ul>
+    </section>
+
+    <section id="laser-alignment">
+      <h2>Controller And Laser Alignment</h2>
+      <p>
+        Controller axis adjustments and laser aim calibration are separate.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <h3>Controller Axis Adjustments</h3>
+          <p>
+            These adjust controller/grip pose behavior. Use them only if controller alignment feels wrong.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Laser Aim Calibration</h3>
+          <p>
+            These rotate the OpenXR aim pose used by the OCU keyboard and OCU menu lasers.
+          </p>
+        </div>
+      </div>
+      <div class="warn">
+        Laser calibration is use-at-your-own-risk. Defaults are zero. If you find good values for a headset,
+        controller, and runtime combination, report them to the OCU devs.
+      </div>
+    </section>
+
+    <section id="community-shaders">
+      <h2>Community Shaders And Upscaling</h2>
+      <p>
+        OCU contains multiple graphics and upscaling options in the Configurator. Community Shaders also contains DLSS
+        upscaling, but not all users are using Community Shaders. Decide which system you want doing your upscaling
+        before compiling shaders.
+      </p>
+      <div class="warn">
+        If Community Shaders is not going to be your upscaling platform, disable its upscaling before shader compilation.
+        Otherwise users can waste time rebuilding shaders.
+      </div>
+    </section>
+
+    <section id="asw">
+      <h2>ASW Experimental Notes</h2>
+      <p>
+        OCU ASW is experimental and currently for future testing. It can create parallax artifacts, ghosting,
+        flickering, or headset/runtime-specific issues.
+      </p>
+      <ul>
+        <li>Do not run ASW and SSW at the same time.</li>
+        <li>If SSW is smoother for your setup, keep using SSW.</li>
+        <li>ASW support tickets are not accepted yet unless the user is intentionally testing experimental ASW.</li>
+      </ul>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <h3>Laser aim is miscalibrated or not aligned</h3>
+      <p>
+        Use Laser Aim Calibration, not controller axis adjustments, if the pointer direction is wrong while the controller model itself feels fine.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

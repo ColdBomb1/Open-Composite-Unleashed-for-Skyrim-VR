@@ -25,13 +25,13 @@ set(ENABLE_SKYRIM_VR ON CACHE BOOL "" FORCE)
 
 # Add CommonLibVR as a subdirectory
 add_subdirectory(
-    "C:/Users/borja/Desktop/CommonLibVR-4.1.3"
+    "C:/Users/borja/Desktop/VR-Project-Staging/external/commonlibsse-ng"
     CommonLibSSE
     EXCLUDE_FROM_ALL
 )
 
 # Include the plugin helper macro from CommonLibVR
-include("C:/Users/borja/Desktop/CommonLibVR-4.1.3/cmake/CommonLibSSE.cmake")
+include("C:/Users/borja/Desktop/VR-Project-Staging/external/commonlibsse-ng/cmake/CommonLibSSE.cmake")
 
 # Plugin source files
 set(SOURCES

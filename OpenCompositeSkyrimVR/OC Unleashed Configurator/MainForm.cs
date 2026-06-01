@@ -188,6 +188,14 @@ namespace OpenCompositeConfigurator
         private NumericUpDown _nudRightPosX = null!;
         private NumericUpDown _nudRightPosY = null!;
         private NumericUpDown _nudRightPosZ = null!;
+        private CheckBox _chkLeftLaserRotation = null!;
+        private NumericUpDown _nudLeftLaserRotX = null!;
+        private NumericUpDown _nudLeftLaserRotY = null!;
+        private NumericUpDown _nudLeftLaserRotZ = null!;
+        private CheckBox _chkRightLaserRotation = null!;
+        private NumericUpDown _nudRightLaserRotX = null!;
+        private NumericUpDown _nudRightLaserRotY = null!;
+        private NumericUpDown _nudRightLaserRotZ = null!;
 
         // Support footer
         private PictureBox _picKofi = null!;
@@ -1239,6 +1247,92 @@ namespace OpenCompositeConfigurator
                     _nudRightPosX.Enabled = en; _nudRightPosY.Enabled = en; _nudRightPosZ.Enabled = en;
                 };
                 ay += 24;
+
+                var lblLaserSection = MakeSectionLabel("Laser Aim Calibration", ax1, ay);
+                _pnlAxisAdjust.Controls.Add(lblLaserSection);
+
+                var lblLaserWarn = MakeLabel("Use at your own risk. Report useful headset/runtime/controller values to OCU devs.", ax1 + 185, ay + 3, 760);
+                lblLaserWarn.ForeColor = Color.FromArgb(255, 185, 70);
+                lblLaserWarn.Font = new Font("Segoe UI", 8.5f, FontStyle.Italic);
+                _pnlAxisAdjust.Controls.Add(lblLaserWarn);
+                ay += 24;
+
+                _chkLeftLaserRotation = MakeCheckBox("Left laser", ax1, ay);
+                _pnlAxisAdjust.Controls.Add(_chkLeftLaserRotation);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("X:", ax1 + 140, ay + 3, 16));
+                _nudLeftLaserRotX = MakeAxisNud(ax1 + 158, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudLeftLaserRotX);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("Y:", ax1 + 230, ay + 3, 16));
+                _nudLeftLaserRotY = MakeAxisNud(ax1 + 248, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudLeftLaserRotY);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("Z:", ax1 + 320, ay + 3, 16));
+                _nudLeftLaserRotZ = MakeAxisNud(ax1 + 338, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudLeftLaserRotZ);
+                _chkLeftLaserRotation.CheckedChanged += (s, e) =>
+                {
+                    bool en = _chkLeftLaserRotation.Checked;
+                    _nudLeftLaserRotX.Enabled = en; _nudLeftLaserRotY.Enabled = en; _nudLeftLaserRotZ.Enabled = en;
+                };
+
+                _chkRightLaserRotation = MakeCheckBox("Right laser", ax2, ay);
+                _pnlAxisAdjust.Controls.Add(_chkRightLaserRotation);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("X:", ax2 + 140, ay + 3, 16));
+                _nudRightLaserRotX = MakeAxisNud(ax2 + 158, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudRightLaserRotX);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("Y:", ax2 + 230, ay + 3, 16));
+                _nudRightLaserRotY = MakeAxisNud(ax2 + 248, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudRightLaserRotY);
+                _pnlAxisAdjust.Controls.Add(MakeLabel("Z:", ax2 + 320, ay + 3, 16));
+                _nudRightLaserRotZ = MakeAxisNud(ax2 + 338, ay, -90m, 90m, 1m, 1);
+                _pnlAxisAdjust.Controls.Add(_nudRightLaserRotZ);
+                _chkRightLaserRotation.CheckedChanged += (s, e) =>
+                {
+                    bool en = _chkRightLaserRotation.Checked;
+                    _nudRightLaserRotX.Enabled = en; _nudRightLaserRotY.Enabled = en; _nudRightLaserRotZ.Enabled = en;
+                };
+                ay += 28;
+
+                _pnlAxisAdjust.Controls.Add(MakeSeparator(ax1, ay, rightEdge - leftMargin));
+                ay += 12;
+
+                var lblSteamVrSection = MakeSectionLabel("SteamVR OCU Profile", ax1, ay);
+                _pnlAxisAdjust.Controls.Add(lblSteamVrSection);
+                ay += 28;
+
+                var btnApplySteamVrProfile = MakeButton("Apply SteamVR OCU Profile", ax1, ay, 220, 28);
+                btnApplySteamVrProfile.BackColor = Color.FromArgb(40, 120, 40);
+                btnApplySteamVrProfile.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                btnApplySteamVrProfile.Click += BtnApplySteamVrProfile_Click;
+                _pnlAxisAdjust.Controls.Add(btnApplySteamVrProfile);
+
+                var btnRestoreSteamVrDefaults = MakeButton("Restore SteamVR Defaults", ax1 + 235, ay, 210, 28);
+                btnRestoreSteamVrDefaults.BackColor = Color.FromArgb(120, 60, 40);
+                btnRestoreSteamVrDefaults.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                btnRestoreSteamVrDefaults.Click += BtnRestoreSteamVrDefaults_Click;
+                _pnlAxisAdjust.Controls.Add(btnRestoreSteamVrDefaults);
+
+                var btnOpenSteamVrSettings = MakeButton("Open SteamVR Settings Folder", ax1 + 460, ay, 225, 28);
+                btnOpenSteamVrSettings.Font = new Font("Segoe UI", 8.5f);
+                btnOpenSteamVrSettings.Click += BtnOpenSteamVrSettingsFolder_Click;
+                _pnlAxisAdjust.Controls.Add(btnOpenSteamVrSettings);
+
+                var lblSteamVrDesc = MakeLabel("Important for SteamVR/OpenXR headsets: set SteamVR as the active OpenXR runtime, then apply this profile. Patches %LOCALAPPDATA%\\openvr\\steamvr.vrsettings.", ax1 + 700, ay + 3, rightEdge - leftMargin - 710);
+                lblSteamVrDesc.ForeColor = Color.FromArgb(130, 130, 130);
+                lblSteamVrDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+                lblSteamVrDesc.Height = 40;
+                _pnlAxisAdjust.Controls.Add(lblSteamVrDesc);
+                ay += 48;
+
+                var btnOpenSetupReadme = MakeButton("Open Setup Readme", ax1, ay, 180, 28);
+                btnOpenSetupReadme.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                btnOpenSetupReadme.Click += BtnOpenSetupReadme_Click;
+                _pnlAxisAdjust.Controls.Add(btnOpenSetupReadme);
+
+                var lblSetupReadmeDesc = MakeLabel("Opens the OCU setup manual in your external browser.", ax1 + 195, ay + 5, 520);
+                lblSetupReadmeDesc.ForeColor = Color.FromArgb(130, 130, 130);
+                lblSetupReadmeDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
+                _pnlAxisAdjust.Controls.Add(lblSetupReadmeDesc);
+                ay += 40;
 
                 _pnlAxisAdjust.Size = new Size(rightEdge - leftMargin, ay);
                 if (_pnlAxisAdjust.Visible) y += ay;
@@ -4434,28 +4528,6 @@ namespace OpenCompositeConfigurator
 
                 container.Controls.Add(aswAdv);
 
-                container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
-                y += 10;
-
-                var lblSteamVrSection = MakeSectionLabel("SteamVR OpenXR Helper", leftMargin, y);
-                container.Controls.Add(lblSteamVrSection);
-                y += 28;
-
-                var btnApplySteamVrProfile = MakeButton("Apply SteamVR OCU Profile", leftMargin, y, 220, 28);
-                btnApplySteamVrProfile.BackColor = Color.FromArgb(65, 80, 55);
-                btnApplySteamVrProfile.Click += BtnApplySteamVrProfile_Click;
-                container.Controls.Add(btnApplySteamVrProfile);
-
-                var btnOpenSteamVrSettings = MakeButton("Open SteamVR Settings Folder", leftMargin + 235, y, 220, 28);
-                btnOpenSteamVrSettings.Click += BtnOpenSteamVrSettingsFolder_Click;
-                container.Controls.Add(btnOpenSteamVrSettings);
-
-                var lblSteamVrDesc = MakeLabel("For SteamVR/OpenXR headsets: patches %LOCALAPPDATA%\\openvr\\steamvr.vrsettings. Use XR Picker or SteamVR to choose the active OpenXR runtime.", leftMargin + 470, y + 3, rightEdge - leftMargin - 490);
-                lblSteamVrDesc.ForeColor = Color.FromArgb(130, 130, 130);
-                lblSteamVrDesc.Font = new Font("Segoe UI", 8f, FontStyle.Italic);
-                lblSteamVrDesc.Height = 40;
-                container.Controls.Add(lblSteamVrDesc);
-                y += 48;
             }
 
             container.Controls.Add(MakeSeparator(leftMargin, y, rightEdge - leftMargin));
@@ -4933,22 +5005,7 @@ namespace OpenCompositeConfigurator
 
         private void BtnApplySteamVrProfile_Click(object? sender, EventArgs e)
         {
-            string path = GetSteamVrSettingsPath();
-            if (!File.Exists(path))
-            {
-                using var dlg = new OpenFileDialog
-                {
-                    Title = "Select steamvr.vrsettings",
-                    Filter = "SteamVR settings|steamvr.vrsettings|JSON files|*.json|All files|*.*",
-                    CheckFileExists = true,
-                    InitialDirectory = Directory.Exists(GetSteamVrSettingsFolder())
-                        ? GetSteamVrSettingsFolder()
-                        : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-                };
-
-                if (dlg.ShowDialog() != DialogResult.OK) return;
-                path = dlg.FileName;
-            }
+            if (!TryGetSteamVrSettingsPath(out string path)) return;
 
             var confirm = MessageBox.Show(
                 "This will back up and patch SteamVR's vrsettings for OCU.\n\nIt does not change your OpenXR runtime. Use XR Picker or SteamVR for that.\n\nContinue?",
@@ -4963,8 +5020,6 @@ namespace OpenCompositeConfigurator
                 string backupPath = ApplySteamVrOcuProfile(path);
                 _lblStatus.Text = $"SteamVR OCU profile applied. Backup: {Path.GetFileName(backupPath)}";
                 _lblStatus.ForeColor = Color.FromArgb(100, 200, 100);
-                _lblVideoStatus.Text = _lblStatus.Text;
-                _lblVideoStatus.ForeColor = _lblStatus.ForeColor;
                 MessageBox.Show($"SteamVR settings patched.\n\nBackup created:\n{backupPath}", "SteamVR OCU Profile",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -4972,9 +5027,36 @@ namespace OpenCompositeConfigurator
             {
                 _lblStatus.Text = $"SteamVR profile failed: {ex.Message}";
                 _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
-                _lblVideoStatus.Text = _lblStatus.Text;
-                _lblVideoStatus.ForeColor = _lblStatus.ForeColor;
                 MessageBox.Show(ex.Message, "SteamVR OCU Profile Failed",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnRestoreSteamVrDefaults_Click(object? sender, EventArgs e)
+        {
+            if (!TryGetSteamVrSettingsPath(out string path)) return;
+
+            var confirm = MessageBox.Show(
+                "This will back up SteamVR's vrsettings and remove the OCU profile overrides so SteamVR defaults apply.\n\nContinue?",
+                "Restore SteamVR Defaults",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                string backupPath = RestoreSteamVrDefaults(path);
+                _lblStatus.Text = $"SteamVR defaults restored. Backup: {Path.GetFileName(backupPath)}";
+                _lblStatus.ForeColor = Color.FromArgb(255, 200, 40);
+                MessageBox.Show($"SteamVR OCU overrides removed.\n\nBackup created:\n{backupPath}", "SteamVR Defaults Restored",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"SteamVR restore failed: {ex.Message}";
+                _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
+                MessageBox.Show(ex.Message, "SteamVR Restore Failed",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -4984,6 +5066,49 @@ namespace OpenCompositeConfigurator
             string folder = GetSteamVrSettingsFolder();
             Directory.CreateDirectory(folder);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+
+        private void BtnOpenSetupReadme_Click(object? sender, EventArgs e)
+        {
+            string readmePath = GetSetupReadmePath();
+            if (!File.Exists(readmePath))
+            {
+                _lblStatus.Text = $"Setup readme not found: {readmePath}";
+                _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
+                MessageBox.Show(readmePath, "Setup Readme Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(readmePath) { UseShellExecute = true });
+        }
+
+        private static string GetSetupReadmePath()
+        {
+            string baseDir = AppContext.BaseDirectory;
+            string docsPath = Path.Combine(baseDir, "Docs", "OCU-Setup-Readme.html");
+            if (File.Exists(docsPath)) return docsPath;
+
+            return Path.Combine(baseDir, "OCU-Setup-Readme.html");
+        }
+
+        private static bool TryGetSteamVrSettingsPath(out string path)
+        {
+            path = GetSteamVrSettingsPath();
+            if (File.Exists(path)) return true;
+
+            using var dlg = new OpenFileDialog
+            {
+                Title = "Select steamvr.vrsettings",
+                Filter = "SteamVR settings|steamvr.vrsettings|JSON files|*.json|All files|*.*",
+                CheckFileExists = true,
+                InitialDirectory = Directory.Exists(GetSteamVrSettingsFolder())
+                    ? GetSteamVrSettingsFolder()
+                    : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+            };
+
+            if (dlg.ShowDialog() != DialogResult.OK) return false;
+            path = dlg.FileName;
+            return true;
         }
 
         private static string GetSteamVrSettingsFolder()
@@ -5038,6 +5163,63 @@ namespace OpenCompositeConfigurator
                 steamVr["debugCommandShortcuts"] = string.IsNullOrWhiteSpace(existingShortcuts)
                     ? throttleShortcut
                     : $"{existingShortcuts},{throttleShortcut}";
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(path, root.ToJsonString(options));
+            return backupPath;
+        }
+
+        private static string RestoreSteamVrDefaults(string path)
+        {
+            string rawJson = File.ReadAllText(path);
+            JsonObject root = JsonNode.Parse(string.IsNullOrWhiteSpace(rawJson) ? "{}" : rawJson)?.AsObject()
+                ?? throw new InvalidOperationException("SteamVR settings root is not a JSON object.");
+
+            if (root["steamvr"] is not JsonObject steamVr)
+            {
+                throw new InvalidOperationException("No steamvr section found in steamvr.vrsettings.");
+            }
+
+            string dir = Path.GetDirectoryName(path) ?? throw new InvalidOperationException("Invalid SteamVR settings path.");
+            string backupPath = Path.Combine(dir, $"steamvr.vrsettings.backup-{DateTime.Now:yyyyMMdd-HHmmss}");
+            File.Copy(path, backupPath, overwrite: false);
+
+            foreach (var key in new[]
+            {
+                "allowSupersampleFiltering",
+                "disableAsync",
+                "enableHomeApp",
+                "framesToThrottle",
+                "motionSmoothing",
+                "showAdvancedSettings",
+                "showMirrorView",
+                "startCompositorFromAppLaunch",
+                "startDashboardFromAppLaunch",
+                "startMonitorFromAppLaunch",
+                "supersampleManualOverride",
+                "supersampleScale"
+            })
+            {
+                steamVr.Remove(key);
+            }
+
+            const string throttleShortcutPrefix = "frame_wait_throttle_toggle:";
+            if (steamVr["debugCommandShortcuts"] is JsonValue shortcutValue &&
+                shortcutValue.TryGetValue<string>(out string? shortcutText))
+            {
+                var remainingShortcuts = shortcutText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(shortcut => !shortcut.StartsWith(throttleShortcutPrefix, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+                if (remainingShortcuts.Length == 0)
+                {
+                    steamVr.Remove("debugCommandShortcuts");
+                }
+                else
+                {
+                    steamVr["debugCommandShortcuts"] = string.Join(",", remainingShortcuts);
+                }
             }
 
             var options = new JsonSerializerOptions { WriteIndented = true };
@@ -5365,6 +5547,28 @@ namespace OpenCompositeConfigurator
             _nudRightPosY.Enabled = _chkRightPosition.Checked;
             _nudRightPosZ.Enabled = _chkRightPosition.Checked;
 
+            _chkLeftLaserRotation.Checked = ParseBool(_ini.Get("", "adjustLeftLaserRotation", "false"));
+            if (float.TryParse(_ini.Get("", "leftLaserXRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float llrx))
+                _nudLeftLaserRotX.Value = (decimal)Math.Clamp(llrx, -90f, 90f);
+            if (float.TryParse(_ini.Get("", "leftLaserYRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float llry))
+                _nudLeftLaserRotY.Value = (decimal)Math.Clamp(llry, -90f, 90f);
+            if (float.TryParse(_ini.Get("", "leftLaserZRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float llrz))
+                _nudLeftLaserRotZ.Value = (decimal)Math.Clamp(llrz, -90f, 90f);
+            _nudLeftLaserRotX.Enabled = _chkLeftLaserRotation.Checked;
+            _nudLeftLaserRotY.Enabled = _chkLeftLaserRotation.Checked;
+            _nudLeftLaserRotZ.Enabled = _chkLeftLaserRotation.Checked;
+
+            _chkRightLaserRotation.Checked = ParseBool(_ini.Get("", "adjustRightLaserRotation", "false"));
+            if (float.TryParse(_ini.Get("", "rightLaserXRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float rlrx))
+                _nudRightLaserRotX.Value = (decimal)Math.Clamp(rlrx, -90f, 90f);
+            if (float.TryParse(_ini.Get("", "rightLaserYRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float rlry))
+                _nudRightLaserRotY.Value = (decimal)Math.Clamp(rlry, -90f, 90f);
+            if (float.TryParse(_ini.Get("", "rightLaserZRotation", "0.0"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float rlrz))
+                _nudRightLaserRotZ.Value = (decimal)Math.Clamp(rlrz, -90f, 90f);
+            _nudRightLaserRotX.Enabled = _chkRightLaserRotation.Checked;
+            _nudRightLaserRotY.Enabled = _chkRightLaserRotation.Checked;
+            _nudRightLaserRotZ.Enabled = _chkRightLaserRotation.Checked;
+
             // FSR settings
             _chkFsrEnabled.Checked = ParseBool(_ini.Get("", "fsrEnabled", "false"));
             _chkFsrNativeAA.Checked = ParseBool(_ini.Get("", "fsrNativeAA", "false"));
@@ -5600,6 +5804,14 @@ namespace OpenCompositeConfigurator
                 _ini.Set("", "rightXPosition", _nudRightPosX.Value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
                 _ini.Set("", "rightYPosition", _nudRightPosY.Value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
                 _ini.Set("", "rightZPosition", _nudRightPosZ.Value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "adjustLeftLaserRotation", _chkLeftLaserRotation.Checked ? "true" : "false");
+                _ini.Set("", "leftLaserXRotation", _nudLeftLaserRotX.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "leftLaserYRotation", _nudLeftLaserRotY.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "leftLaserZRotation", _nudLeftLaserRotZ.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "adjustRightLaserRotation", _chkRightLaserRotation.Checked ? "true" : "false");
+                _ini.Set("", "rightLaserXRotation", _nudRightLaserRotX.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "rightLaserYRotation", _nudRightLaserRotY.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+                _ini.Set("", "rightLaserZRotation", _nudRightLaserRotZ.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
             }
 
             // FSR settings
@@ -5820,7 +6032,11 @@ namespace OpenCompositeConfigurator
             _nudLeftPosX.Value = 0m; _nudLeftPosY.Value = 0m; _nudLeftPosZ.Value = 0m;
             _chkRightPosition.Checked = false;
             _nudRightPosX.Value = 0m; _nudRightPosY.Value = 0m; _nudRightPosZ.Value = 0m;
-            _lblStatus.Text = "Controller axis settings reset to defaults";
+            _chkLeftLaserRotation.Checked = false;
+            _nudLeftLaserRotX.Value = 0m; _nudLeftLaserRotY.Value = 0m; _nudLeftLaserRotZ.Value = 0m;
+            _chkRightLaserRotation.Checked = false;
+            _nudRightLaserRotX.Value = 0m; _nudRightLaserRotY.Value = 0m; _nudRightLaserRotZ.Value = 0m;
+            _lblStatus.Text = "Controller axis and laser settings reset to defaults";
             _lblStatus.ForeColor = Color.FromArgb(255, 200, 40);
         }
     }

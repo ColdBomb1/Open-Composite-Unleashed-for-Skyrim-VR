@@ -15,6 +15,7 @@
 #include "resources.h"
 
 #include "Misc/Config.h"
+#include "Misc/LaserCalibration.h"
 #include "Misc/lodepng.h"
 
 #include <cmath>
@@ -1771,7 +1772,7 @@ const std::vector<XrCompositionLayerBaseHeader*>& VRKeyboard::Update()
 							    && (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT)
 							    && (loc.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)) {
 								XrVector3f rayOrig = loc.pose.position;
-								XrVector3f rayFwd = { 0, 0, -1 };
+								XrVector3f rayFwd = oovr_laser_calibration::LocalForward(side);
 								XrVector3f rayDir;
 								rotate_vector_by_quaternion(rayFwd, loc.pose.orientation, rayDir);
 
@@ -1871,7 +1872,7 @@ const std::vector<XrCompositionLayerBaseHeader*>& VRKeyboard::Update()
 					    && (location.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT)
 					    && (location.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)) {
 						// Project 3 meters forward from controller
-						XrVector3f fwd = { 0.0f, 0.0f, -1.0f };
+						XrVector3f fwd = oovr_laser_calibration::LocalForward(side);
 						XrVector3f dir;
 						rotate_vector_by_quaternion(fwd, location.pose.orientation, dir);
 						targetDotLayer[side].pose.position = {
@@ -1961,7 +1962,7 @@ int VRKeyboard::HitTestLaser(int side)
 		return -1;
 
 	XrVector3f rayOrigin = location.pose.position;
-	XrVector3f fwd = { 0.0f, 0.0f, -1.0f };
+	XrVector3f fwd = oovr_laser_calibration::LocalForward(side);
 	XrVector3f rayDir;
 	rotate_vector_by_quaternion(fwd, location.pose.orientation, rayDir);
 

@@ -18,16 +18,16 @@ set(ENABLE_SKYRIM_VR ON CACHE BOOL "" FORCE)
 
 # Add CommonLibVR as a subdirectory
 add_subdirectory(
-    "C:/Users/JLWel/Documents/GitHub/CommonLibVR-4.1.3"
+    "C:/Users/borja/Desktop/VR-Project-Staging/external/commonlibsse-ng"
     CommonLibSSE
     EXCLUDE_FROM_ALL
 )
 
 # Include the plugin helper macro from CommonLibVR
-include("C:/Users/JLWel/Documents/GitHub/CommonLibVR-4.1.3/cmake/CommonLibSSE.cmake")
+include("C:/Users/borja/Desktop/VR-Project-Staging/external/commonlibsse-ng/cmake/CommonLibSSE.cmake")
 
 # MinHook — inline hooking library (needed for D3D11 DrawIndexed hook)
-set(MINHOOK_DIR "C:/Users/JLWel/Documents/GitHub/Open-Composite-Unleashed-for-Skyrim-VR/OpenCompositeSkyrimVR/libs/minhook")
+set(MINHOOK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../OpenCompositeSkyrimVR/libs/minhook")
 add_library(minhook_skse STATIC
     ${MINHOOK_DIR}/src/buffer.c
     ${MINHOOK_DIR}/src/hook.c

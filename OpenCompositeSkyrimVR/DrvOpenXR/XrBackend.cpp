@@ -45,6 +45,7 @@
 #endif
 
 #include "../OpenOVR/Misc/Config.h"
+#include "../OpenOVR/Misc/LaserCalibration.h"
 #include "ASWProvider.h"
 #include "SpaceWarpProvider.h"
 
@@ -312,6 +313,7 @@ void XrBackend::GetDeviceToAbsoluteTrackingPose(
 			if (devIdx < poseArrayCount && poseArray[devIdx].bPoseIsValid) {
 				g_aimPoses.valid[h] = true;
 				g_aimPoses.matrix[h] = poseArray[devIdx].mDeviceToAbsoluteTracking;
+				oovr_laser_calibration::ApplyToPoseMatrix(h, g_aimPoses.matrix[h]);
 				if (g_aswProvider) {
 					auto& m = poseArray[devIdx].mDeviceToAbsoluteTracking;
 					g_aswProvider->SetControllerPos(h, m.m[0][3], m.m[1][3], m.m[2][3], true);
@@ -339,8 +341,10 @@ void XrBackend::GetDeviceToAbsoluteTrackingPose(
 				vr::TrackedDevicePose_t aimPose = {};
 				xr_utils::PoseFromSpace(&aimPose, aimSpace, toOrigin);
 				g_aimPoses.valid[h] = aimPose.bPoseIsValid;
-				if (aimPose.bPoseIsValid)
+				if (aimPose.bPoseIsValid) {
 					g_aimPoses.matrix[h] = aimPose.mDeviceToAbsoluteTracking;
+					oovr_laser_calibration::ApplyToPoseMatrix(h, g_aimPoses.matrix[h]);
+				}
 			} else {
 				g_aimPoses.valid[h] = false;
 			}

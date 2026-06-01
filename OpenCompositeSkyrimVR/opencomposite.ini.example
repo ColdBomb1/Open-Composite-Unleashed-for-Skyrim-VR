@@ -187,6 +187,23 @@
 ;rightYPosition=0.0
 ;rightZPosition=0.0
 
+; Laser aim calibration rotates the OpenXR aim pose used by the OCU keyboard,
+; menu lasers, and the OC_AIM_POSES export consumed by Prisma UI.
+; Use at your own risk and report useful headset/runtime/controller values to OCU devs.
+; Default: false
+;adjustLeftLaserRotation=false
+;adjustRightLaserRotation=false
+
+; Laser rotation offsets in degrees for each axis (pitch, yaw, roll).
+; Only used when the corresponding adjust*LaserRotation is true.
+; Default: 0.0 for all
+;leftLaserXRotation=0.0
+;leftLaserYRotation=0.0
+;leftLaserZRotation=0.0
+;rightLaserXRotation=0.0
+;rightLaserYRotation=0.0
+;rightLaserZRotation=0.0
+
 
 ; ----------------------------------------------------------------------------
 ;  DEAD ZONES  (thumbstick)

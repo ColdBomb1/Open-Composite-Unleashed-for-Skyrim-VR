@@ -7,6 +7,7 @@
 
 #include "Reimpl/BaseInput.h"
 #include "Reimpl/BaseSystem.h"
+#include "Misc/LaserCalibration.h"
 #include "generated/static_bases.gen.h"
 
 #ifdef _WIN32
@@ -481,7 +482,7 @@ const std::vector<XrCompositionLayerBaseHeader*>& VRMenuLaser::Update(
 			continue;
 
 		XrVector3f rayOrigin = location.pose.position;
-		XrVector3f fwd = { 0.0f, 0.0f, -1.0f };
+		XrVector3f fwd = oovr_laser_calibration::LocalForward(side);
 		XrVector3f rayDir;
 		rotate_vector_by_quaternion(fwd, location.pose.orientation, rayDir);
 

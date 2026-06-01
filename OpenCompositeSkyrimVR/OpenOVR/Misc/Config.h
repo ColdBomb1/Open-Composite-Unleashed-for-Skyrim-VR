@@ -31,6 +31,8 @@ public:
 	inline bool AdjustRightRotation() { return adjustRightRotation; }
 	inline bool AdjustLeftPosition() { return adjustLeftPosition; }
 	inline bool AdjustRightPosition() { return adjustRightPosition; }
+	inline bool AdjustLeftLaserRotation() { return adjustLeftLaserRotation; }
+	inline bool AdjustRightLaserRotation() { return adjustRightLaserRotation; }
 	float Tilt() const { return tilt; }
 	float LeftXRotation() const { return leftXRotation; }
 	float LeftYRotation() const { return leftYRotation; }
@@ -38,6 +40,12 @@ public:
 	float RightXRotation() const { return rightXRotation; }
 	float RightYRotation() const { return rightYRotation; }
 	float RightZRotation() const { return rightZRotation; }
+	float LeftLaserXRotation() const { return leftLaserXRotation; }
+	float LeftLaserYRotation() const { return leftLaserYRotation; }
+	float LeftLaserZRotation() const { return leftLaserZRotation; }
+	float RightLaserXRotation() const { return rightLaserXRotation; }
+	float RightLaserYRotation() const { return rightLaserYRotation; }
+	float RightLaserZRotation() const { return rightLaserZRotation; }
 	float LeftXPosition() const { return leftXPosition; }
 	float LeftYPosition() const { return leftYPosition; }
 	float LeftZPosition() const { return leftZPosition; }
@@ -236,6 +244,8 @@ private:
 	bool adjustRightRotation = false;
 	bool adjustLeftPosition = false;
 	bool adjustRightPosition = false;
+	bool adjustLeftLaserRotation = false;
+	bool adjustRightLaserRotation = false;
 
 	float tilt = 0.0f;
 
@@ -245,6 +255,13 @@ private:
 	float rightXRotation = 0.0f;
 	float rightYRotation = 0.0f;
 	float rightZRotation = 0.0f;
+
+	float leftLaserXRotation = 0.0f;
+	float leftLaserYRotation = 0.0f;
+	float leftLaserZRotation = 0.0f;
+	float rightLaserXRotation = 0.0f;
+	float rightLaserYRotation = 0.0f;
+	float rightLaserZRotation = 0.0f;
 
 	float leftXPosition = 0.0f;
 	float leftYPosition = 0.0f;

@@ -228,6 +228,8 @@ int Config::ini_handler(void* user, const char* pSection,
 		CFGOPT(bool, adjustRightRotation);
 		CFGOPT(bool, adjustLeftPosition);
 		CFGOPT(bool, adjustRightPosition);
+		CFGOPT(bool, adjustLeftLaserRotation);
+		CFGOPT(bool, adjustRightLaserRotation);
 		CFGOPT(float, tilt);
 		CFGOPT(float, leftXRotation);
 		CFGOPT(float, leftYRotation);
@@ -235,6 +237,12 @@ int Config::ini_handler(void* user, const char* pSection,
 		CFGOPT(float, rightXRotation);
 		CFGOPT(float, rightYRotation);
 		CFGOPT(float, rightZRotation);
+		CFGOPT(float, leftLaserXRotation);
+		CFGOPT(float, leftLaserYRotation);
+		CFGOPT(float, leftLaserZRotation);
+		CFGOPT(float, rightLaserXRotation);
+		CFGOPT(float, rightLaserYRotation);
+		CFGOPT(float, rightLaserZRotation);
 		CFGOPT(float, leftXPosition);
 		CFGOPT(float, leftYPosition);
 		CFGOPT(float, leftZPosition);
